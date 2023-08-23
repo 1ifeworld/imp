@@ -18,9 +18,9 @@ import {Version} from "../../../../utils/Version.sol";
 import {FundsReceiver} from "../../../../utils/FundsReceiver.sol";
 
 /**
- * @title Press
+ * @title PressTokenless
  */
-contract Press is
+contract PressTokenless is
     IPressTokenlessTypesV1,
     IPressTypesV1,
     IPress,
@@ -82,7 +82,6 @@ contract Press is
         // Set things
         router = routerAddr;
         name = pressName;
-        // symbol = contractSymbol;
 
         // Set press storage
         ++settings.counter; // this acts as an initialization check since will be 0 before init
