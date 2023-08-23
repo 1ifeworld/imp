@@ -107,7 +107,7 @@ contract PressTokenless is
         if (msg.sender != router) revert Sender_Not_Router();
         (bytes32[] memory merkleProof, Listing[] memory listings) = abi.decode(data, (bytes32[], Listing[]));
         uint256[] memory ids = new uint256[](listings.length);
-        if (!ILogic(settings.logic).transmitRequest(sender, merkleProof, listings.length)) revert No_Access();
+        if (!ILogic(settings.logic).transmitRequest(sender, listings.length, merkleProof)) revert No_Access();
         for (uint256 i; i < listings.length; ++i) {
             ids[i] = settings.counter;
             ++settings.counter;

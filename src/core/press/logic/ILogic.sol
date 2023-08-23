@@ -5,5 +5,5 @@ interface ILogic {
     /// @notice Initializes setup data in logic contract
     function initializeWithData(bytes memory data) external;
 
-    function transmitRequest(address sender, bytes32[] memory merkleProof, uint256 quantity) external payable returns (bool);
+    function transmitRequest(address sender, uint256 quantity, bytes32[] memory merkleProof) external returns (bool);
 }
