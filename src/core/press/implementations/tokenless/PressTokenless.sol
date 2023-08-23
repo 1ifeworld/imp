@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-/* woah */
-
+import "sstore2/SSTORE2.sol";
 import {ReentrancyGuardUpgradeable} from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {OwnableUpgradeable} from "../../../../utils/ownable/single/OwnableUpgradeable.sol";
-import {Version} from "../../../../utils/Version.sol";
-import {FundsReceiver} from "../../../../utils/FundsReceiver.sol";
 
 import {IPress} from "../../interfaces/IPress.sol";
 import {IPressTokenlessTypesV1} from "./types/IPressTokenlessTypesV1.sol";
@@ -17,14 +13,9 @@ import {ILogic} from "../../logic/ILogic.sol";
 import {IRenderer} from "../../renderer/IRenderer.sol";
 import {FeeManager} from "../../fees/FeeManager.sol";
 import {TransferUtils} from "../../../../utils/TransferUtils.sol";
-
-import "sstore2/SSTORE2.sol";
-
-// TODO: update the erc1155upgradeable version to the most recent OZ release. compiler there should be 0.8.20 if latest
-//      and then update how non-transferability functionality is being added
-
-// TODO: move the owner storage into settings of the Press. This will give us better awareness of what storage slot
-//        it takes in the long run, and also improve the return of settings
+import {OwnableUpgradeable} from "../../../../utils/ownable/single/OwnableUpgradeable.sol";
+import {Version} from "../../../../utils/Version.sol";
+import {FundsReceiver} from "../../../../utils/FundsReceiver.sol";
 
 /**
  * @title Press
