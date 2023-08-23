@@ -103,7 +103,7 @@ contract PressTokenless is
 
     /* ~~~ Token Data Interactions ~~~ */
 
-    function transmitData(address sender, bytes memory data) external payable returns (uint256[] memory, bytes memory, uint256) {
+    function storeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, bytes memory, uint256) {
         if (msg.sender != router) revert Sender_Not_Router();
         (bytes32[] memory merkleProof, Listing[] memory listings) = abi.decode(data, (bytes32[], Listing[]));
         uint256[] memory ids = new uint256[](listings.length);
@@ -112,10 +112,33 @@ contract PressTokenless is
             ids[i] = settings.counter;
             ++settings.counter;
         }
+        _handleFees(listings.length);      
         return (ids, abi.encode(listings), DATA_SCHEMA);
     }         
 
     /* ~~~ Press Data Interactions ~~~ */          
+
+    function updatePressData(address sender, bytes memory data) external payable returns (address) {        
+        if (msg.sender != router) revert Sender_Not_Router();        
+        /* 
+            Could put logic check here for sender
+        */        
+        // Hardcoded `1` value since this function only updates 1 storage slot
+        _handleFees(1);        
+        (bytes memory dataToStore) = abi.decode(data, (bytes));        
+        if (dataToStore.length == 0) {
+            delete pressData;
+            return pressData;
+        } else {
+            /* 
+                Could put fee logic here, for when people are storing data
+                Could even check if press data is zero or not 
+                Otherwise maybe best to make this function non payable
+            */      
+            pressData = SSTORE2.write(dataToStore);
+            return pressData;
+        }
+    }        
 
     //////////////////////////////
     // INTERNAL
