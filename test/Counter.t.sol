@@ -5,20 +5,26 @@ import {Test, console2} from "forge-std/Test.sol";
 import {Counter} from "../src/Counter.sol";
 
 contract CounterTest is Test {
-    Counter public counter;
+
+    Counter counter;
 
     function setUp() public {
         counter = new Counter();
-        counter.setNumber(0);
     }
+    
+    address constant head = address(0x1);
 
-    function test_Increment() public {
-        counter.increment();
-        assertEq(counter.number(), 1);
-    }
+    function test_transmit() public {
+        Counter.Listing[] memory listings = new Counter.Listing[](1);
+        listings[0] = Counter.Listing({
+            chainId: 1,
+            tokenId: 1,
+            listingAddress: address(0x123),
+            hasTokenId: true
+        });        
+        bytes memory data = abi.encode(listings);
 
-    function testFuzz_SetNumber(uint256 x) public {
-        counter.setNumber(x);
-        assertEq(counter.number(), x);
+        vm.prank(head);
+        counter.transmitData(head, data);
     }
 }

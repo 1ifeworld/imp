@@ -1,1 +1,2 @@
 sstore2/=lib/sstore2/contracts/
+openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
