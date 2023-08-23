@@ -4,10 +4,12 @@ pragma solidity 0.8.20;
 contract Counter {
     uint256 public counter;
     address router;
+    uint256 constant dataSceheme = 2;
+    bytes32 public merkleRoot;
 
     struct Listing {
-        uint256 chainId;
-        uint256 tokenId;
+        uint128 chainId;
+        uint128 tokenId;
         address listingAddress;
         bool hasTokenId;
     }
@@ -20,21 +22,18 @@ contract Counter {
 
     error Sender_Not_Router();
 
-    function transmitDat2(address sender, bytes memory data) external returns (uint256[] memory, address[] memory) {
-        // if (msg.sender != router) revert Sender_Not_Router();
-        (Listing[] memory listings) = abi.decode(data, (Listing[]));
+    function transmitDat2(address sender, bytes memory data) external returns (uint256[] memory, bytes[] memory, uint256) {
+        if (msg.sender != router) revert Sender_Not_Router();
+        (bytes32[] memory proof, Listing[] memory listings) = abi.decode(data, (Bytes32[], Listing[]));
         uint256[] memory ids = new uint256[](listings.length);
         bytes[] memory encodedData = new bytes[](listings.length);
+        if (!merkleProofCheck(root, proof, sender)) revert No_Access();
         for (uint256 i; i < listings.length; ++i) {
             ids[i] = counter;
-            emit ListingTransmitted({
-                sender: sender,
-                id: counter,
-                listing: listings[i]
-            });            
+            encodedData[i] = abi.encode(listings[0]);
             ++counter;
         }
-        return (ids, _generateArrayOfZeroAddrs(listings.length));
+        return (ids, encodedData, dataScheme);
     }    
 
     function transmitData(address sender, bytes memory data) external returns (uint256[] memory, address[] memory) {
