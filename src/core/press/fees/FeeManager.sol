@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import {TransferUtils} from "../../../utils/TransferUtils.sol";
+import {IPress} from "../interfaces/IPress.sol";
 
 /**
  * @title FeeManager
@@ -13,7 +14,6 @@ contract FeeManager {
 
     error Fee_Transfer_Failed();
     error Cannot_Set_Recipient_To_Zero_Address();
-    error Incorrect_Msg_Value();
 
     constructor (address _feeRecipient, uint256 _fee) {
         feeRecipient = _feeRecipient;
@@ -29,7 +29,7 @@ contract FeeManager {
 
     function _handleFees(uint256 numStorageSlots) internal {
         uint256 totalFee = fee * numStorageSlots;
-        if (msg.value != totalFee) revert Incorrect_Msg_Value();
+        if (msg.value != totalFee) revert IPress.Incorrect_Msg_Value();
         if (!TransferUtils.safeSendETH(
             feeRecipient, 
             totalFee, 

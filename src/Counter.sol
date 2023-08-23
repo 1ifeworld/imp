@@ -7,58 +7,58 @@ contract Counter {
     uint256 constant dataSceheme = 2;
     bytes32 public merkleRoot;
 
-    struct Listing {
-        uint128 chainId;
-        uint128 tokenId;
-        address listingAddress;
-        bool hasTokenId;
-    }
+    // struct Listing {
+    //     uint128 chainId;
+    //     uint128 tokenId;
+    //     address listingAddress;
+    //     bool hasTokenId;
+    // }
 
-    event ListingTransmitted(
-        address sender,
-        uint256 id,
-        Listing listing
-    );
+    // event ListingTransmitted(
+    //     address sender,
+    //     uint256 id,
+    //     Listing listing
+    // );
 
-    error Sender_Not_Router();
+    // error Sender_Not_Router();
 
-    function transmitDat2(address sender, bytes memory data) external returns (uint256[] memory, bytes[] memory, uint256) {
-        if (msg.sender != router) revert Sender_Not_Router();
-        (bytes32[] memory proof, Listing[] memory listings) = abi.decode(data, (Bytes32[], Listing[]));
-        uint256[] memory ids = new uint256[](listings.length);
-        bytes[] memory encodedData = new bytes[](listings.length);
-        if (!merkleProofCheck(root, proof, sender)) revert No_Access();
-        for (uint256 i; i < listings.length; ++i) {
-            ids[i] = counter;
-            encodedData[i] = abi.encode(listings[0]);
-            ++counter;
-        }
-        return (ids, encodedData, dataScheme);
-    }    
+    // function transmitDat2(address sender, bytes memory data) external returns (uint256[] memory, bytes[] memory, uint256) {
+    //     if (msg.sender != router) revert Sender_Not_Router();
+    //     (bytes32[] memory proof, Listing[] memory listings) = abi.decode(data, (bytes32[], Listing[]));
+    //     uint256[] memory ids = new uint256[](listings.length);
+    //     bytes[] memory encodedData = new bytes[](listings.length);
+    //     if (!merkleProofCheck(root, proof, sender)) revert No_Access();
+    //     for (uint256 i; i < listings.length; ++i) {
+    //         ids[i] = counter;
+    //         encodedData[i] = abi.encode(listings[0]);
+    //         ++counter;
+    //     }
+    //     return (ids, encodedData, dataScheme);
+    // }    
 
-    function transmitData(address sender, bytes memory data) external returns (uint256[] memory, address[] memory) {
-        // if (msg.sender != router) revert Sender_Not_Router();
-        (Listing[] memory listings) = abi.decode(data, (Listing[]));
-        uint256[] memory ids = new uint256[](listings.length);
-        for (uint256 i; i < listings.length; ++i) {
-            ids[i] = counter;
-            emit ListingTransmitted({
-                sender: sender,
-                id: counter,
-                listing: listings[i]
-            });            
-            ++counter;
-        }
-        return (ids, _generateArrayOfZeroAddrs(listings.length));
-    }
+    // function transmitData(address sender, bytes memory data) external returns (uint256[] memory, address[] memory) {
+    //     // if (msg.sender != router) revert Sender_Not_Router();
+    //     (Listing[] memory listings) = abi.decode(data, (Listing[]));
+    //     uint256[] memory ids = new uint256[](listings.length);
+    //     for (uint256 i; i < listings.length; ++i) {
+    //         ids[i] = counter;
+    //         emit ListingTransmitted({
+    //             sender: sender,
+    //             id: counter,
+    //             listing: listings[i]
+    //         });            
+    //         ++counter;
+    //     }
+    //     return (ids, _generateArrayOfZeroAddrs(listings.length));
+    // }
 
-    function _generateArrayOfZeroAddrs(uint256 quantity) internal pure returns (address[] memory) {
-        address[] memory arrayOfZeroAddrs = new address[](quantity);
-        for (uint256 i; i < quantity; ++i) {
-            arrayOfZeroAddrs[i] = address(0);
-        }
-        return arrayOfZeroAddrs;
-    } 
+    // function _generateArrayOfZeroAddrs(uint256 quantity) internal pure returns (address[] memory) {
+    //     address[] memory arrayOfZeroAddrs = new address[](quantity);
+    //     for (uint256 i; i < quantity; ++i) {
+    //         arrayOfZeroAddrs[i] = address(0);
+    //     }
+    //     return arrayOfZeroAddrs;
+    // } 
 }
 
 /*

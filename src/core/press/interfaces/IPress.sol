@@ -35,8 +35,9 @@ interface IPress {
         bytes memory rendererInit
     ) external;
 
-    function updatePressData(address press, bytes memory data) external payable returns (address);
-    function storeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, address[] memory);
-    function overwriteTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, address[] memory);
-    function removeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory);
+    // function updatePressData(address press, bytes memory data) external payable returns (address);
+    // function storeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, address[] memory);
+    // function overwriteTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, address[] memory);
+    // function removeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory);
+    function transmitData(address sender, bytes memory data) external payable returns (uint256[] memory, bytes memory, uint256);
 }

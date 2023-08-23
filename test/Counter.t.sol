@@ -12,19 +12,19 @@ contract CounterTest is Test {
         counter = new Counter();
     }
     
-    address constant head = address(0x1);
+    // address constant head = address(0x1);
 
-    function test_transmit() public {
-        Counter.Listing[] memory listings = new Counter.Listing[](1);
-        listings[0] = Counter.Listing({
-            chainId: 1,
-            tokenId: 1,
-            listingAddress: address(0x123),
-            hasTokenId: true
-        });        
-        bytes memory data = abi.encode(listings);
+    // function test_transmit() public {
+    //     Counter.Listing[] memory listings = new Counter.Listing[](1);
+    //     listings[0] = Counter.Listing({
+    //         chainId: 1,
+    //         tokenId: 1,
+    //         listingAddress: address(0x123),
+    //         hasTokenId: true
+    //     });        
+    //     bytes memory data = abi.encode(listings);
 
-        vm.prank(head);
-        counter.transmitData(head, data);
-    }
+    //     vm.prank(head);
+    //     counter.transmitData(head, data);
+    // }
 }
