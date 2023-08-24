@@ -117,7 +117,7 @@ contract PressTokenless is
         // Store sender + increment id counter for each piece of data
         for (uint256 i; i < listings.length; ++i) {
             ids[i] = settings.counter;
-            // idOrigin[i] = sender;
+            idOrigin[i] = sender;
             ++settings.counter;
         }
         // Handle system fees for given quantity of data
