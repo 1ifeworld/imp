@@ -110,18 +110,20 @@ contract PressTokenless is
         if (msg.sender != router) revert Sender_Not_Router();
         // Decode incoming data
         (bytes32[] memory merkleProof, Listing[] memory listings) = abi.decode(data, (bytes32[], Listing[]));
+        // Cache data quantity
+        uint256 quantity = listings.length;
         // Initialize ids memory array for return
-        uint256[] memory ids = new uint256[](listings.length);
+        uint256[] memory ids = new uint256[](quantity);
         // Request send access from logic contract for given sender, quantity, and merkleProof
-        if (!ILogic(settings.logic).getSendAccess(sender, listings.length, merkleProof)) revert No_Access();
+        if (!ILogic(settings.logic).getSendAccess(sender, quantity, merkleProof)) revert No_Access();
         // Store sender + increment id counter for each piece of data
-        for (uint256 i; i < listings.length; ++i) {
+        for (uint256 i; i < quantity; ++i) {
             ids[i] = settings.counter;
             idOrigin[i] = sender;
             ++settings.counter;
         }
         // Handle system fees for given quantity of data
-        _handleFees(listings.length);      
+        _handleFees(quantity);      
         // Send response back to router for event emission
         return (ids, abi.encode(listings), DATA_SCHEMA);
     }     
