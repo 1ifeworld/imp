@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {IFactory} from "./interfaces/IFactory.sol";
-import {PressTokenless} from "../press/implementations/tokenless/PressTokenless.sol";
-import {PressProxy} from "../press/proxy/PressProxy.sol";
+import {IFactory} from "../../../../core/factory/interfaces/IFactory.sol";
+import {PressProxy} from "../../../../core/press/proxy/PressProxy.sol";
+import {PressTransmitterListings} from "../press/PressTransmitterListings.sol";
 
 /**
- * @title Factory
+ * @title FactoryTransmitterListings
  */
-contract Factory is IFactory {
+contract FactoryTransmitterListings is IFactory {
     //////////////////////////////////////////////////
     // TYPES
     //////////////////////////////////////////////////    
@@ -63,7 +63,7 @@ contract Factory is IFactory {
         // Configure ownership details in proxy constructor
         PressProxy newPress = new PressProxy(pressImpl, "");
         // Initialize PressProxy
-        PressTokenless(payable(address(newPress))).initialize({
+        PressTransmitterListings(payable(address(newPress))).initialize({
             pressName: inputs.pressName,
             initialOwner: inputs.initialOwner,
             routerAddr: router, // input comes from local storage not decode

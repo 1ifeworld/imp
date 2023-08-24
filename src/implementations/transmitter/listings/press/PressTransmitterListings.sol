@@ -6,26 +6,29 @@ import {Initializable} from "openzeppelin-contracts-upgradeable/proxy/utils/Init
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
-import {IPress} from "../../interfaces/IPress.sol";
-import {IPressTokenlessTypesV1} from "./types/IPressTokenlessTypesV1.sol";
-import {IPressTypesV1} from "../../types/IPressTypesV1.sol";
-import {PressStorageV1} from "../../storage/PressStorageV1.sol";
-import {ILogic} from "../../logic/ILogic.sol";
-import {IRenderer} from "../../renderer/IRenderer.sol";
-import {FeeManager} from "../../fees/FeeManager.sol";
+import {IPress} from "../../../../core/press/interfaces/IPress.sol";
+import {ILogic} from "../../../../core/press/interfaces/ILogic.sol";
+import {IRenderer} from "../../../../core/press/interfaces/IRenderer.sol";
+import {IPressTypesV1} from "../../../../core/press/types/IPressTypesV1.sol";
+import {PressStorageV1} from "../../../../core/press/storage/PressStorageV1.sol";
+import {FeeManager} from "../../../../core/press/fees/FeeManager.sol";
+import {PressTransmitterStorageV1} from "../../shared/press/storage/PressTransmitterStorageV1.sol";
+import {IListing} from "../types/IListing.sol";
+
 import {TransferUtils} from "../../../../utils/TransferUtils.sol";
-import {OwnableUpgradeable} from "../../../../utils/ownable/single/OwnableUpgradeable.sol";
 import {Version} from "../../../../utils/Version.sol";
 import {FundsReceiver} from "../../../../utils/FundsReceiver.sol";
+import {OwnableUpgradeable} from "../../../../utils/ownable/single/OwnableUpgradeable.sol";
 
 /**
- * @title PressTokenless
+ * @title PressTransmitterListings
  */
-contract PressTokenless is
-    IPressTokenlessTypesV1,
+contract PressTransmitterListings is
+    IListing,
     IPressTypesV1,
     IPress,
     PressStorageV1,
+    PressTransmitterStorageV1,
     FeeManager,
     Version(1),
     FundsReceiver,
@@ -38,8 +41,8 @@ contract PressTokenless is
     // STORAGE
     ////////////////////////////////////////////////////////////
 
+    // TODO: DATA_SCHEMA should maybe be moved out into shared storage implementation as well
     uint256 constant DATA_SCHEMA = 2;
-    mapping(uint256 => address) public idOrigin;
 
     ////////////////////////////////////////////////////////////
     // ERRORS

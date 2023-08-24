@@ -4,25 +4,25 @@ pragma solidity 0.8.20;
 import {Test, console2} from "forge-std/Test.sol";
 
 import {Router} from "../src/core/router/Router.sol";
-import {Factory} from "../src/core/factory/Factory.sol";
+import {FactoryTransmitterListings} from "../src/implementations/transmitter/listings/factory/FactoryTransmitterListings.sol";
 import {IFactory} from "../src/core/factory/interfaces/IFactory.sol";
-import {PressTokenless} from "../src/core/press/implementations/tokenless/PressTokenless.sol";
+import {PressTransmitterListings} from "../src/implementations/transmitter/listings/press/PressTransmitterListings.sol";
 import {PressProxy} from "../src/core/press/proxy/PressProxy.sol";
 import {IPress} from "../src/core/press/interfaces/IPress.sol";
 import {IPressTypesV1} from "../src/core/press/types/IPressTypesV1.sol";
-import {IPressTokenlessTypesV1} from "../src/core/press/implementations/tokenless/types/IPressTokenlessTypesV1.sol";
-import {LogicRouterV1} from "../src/core/press/logic/LogicRouterV1.sol";
+import {IListing} from "../src/implementations/transmitter/listings/types/IListing.sol";
+import {LogicTransmitterMerkleAdmin} from "../src/implementations/transmitter/shared/logic/LogicTransmitterMerkleAdmin.sol";
 import {MockRenderer} from "./mocks/renderer/MockRenderer.sol";
 
 contract RouterTest is Test {
  
     // PUBLIC TEST VARIABLES
     Router router;
-    Factory factory;
-    PressTokenless press;
+    FactoryTransmitterListings factory;
+    PressTransmitterListings press;
     address feeRecipient = address(0x999);
     uint256 fee = 0.0005 ether;    
-    LogicRouterV1 logic;
+    LogicTransmitterMerkleAdmin logic;
     MockRenderer renderer;
     address admin = address(0x123);
     // NOTE: following merkle gymnastics conducted via lanyard.org
@@ -35,9 +35,9 @@ contract RouterTest is Test {
     function setUp() public {
 
         router = new Router();
-        press = new PressTokenless(feeRecipient, fee);
-        factory = new Factory(address(router), address(press));
-        logic = new LogicRouterV1();
+        press = new PressTransmitterListings(feeRecipient, fee);
+        factory = new FactoryTransmitterListings(address(router), address(press));
+        logic = new LogicTransmitterMerkleAdmin();
         renderer = new MockRenderer();
         
         address[] memory factoryToRegister = new address[](1);
@@ -49,13 +49,13 @@ contract RouterTest is Test {
 
     function test_sendData() public {
         // setup tokenless press
-        PressTokenless activePress = PressTokenless(payable(createGenericPress()));
+        PressTransmitterListings activePress = PressTransmitterListings(payable(createGenericPress()));
         // setup merkle proof for included address
         bytes32[] memory proof = new bytes32[](1);
         proof[0] = merkleProofForAdminAndRoot;
         // setup listings array
-        IPressTokenlessTypesV1.Listing[] memory listings = new IPressTokenlessTypesV1.Listing[](1);
-        listings[0] = IPressTokenlessTypesV1.Listing({
+        IListing.Listing[] memory listings = new IListing.Listing[](1);
+        listings[0] = IListing.Listing({
             chainId: 7777777,
             tokenId: 17,
             listingAddress: address(0x7777777),
@@ -78,7 +78,7 @@ contract RouterTest is Test {
         address[] memory initialAdmins = new address[](1);
         initialAdmins[0] = admin;
         // setup inputs for router setupPress call
-        IFactory.Inputs memory inputs = IFactory.Inputs({
+        FactoryTransmitterListings.Inputs memory inputs = FactoryTransmitterListings.Inputs({
             pressName: "River",
             initialOwner: admin,
             logic: address(logic),
