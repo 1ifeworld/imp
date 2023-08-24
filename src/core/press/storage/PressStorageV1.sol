@@ -8,24 +8,23 @@ import {IPressTypesV1} from "../types/IPressTypesV1.sol";
 // TODO: missing UUPS storage gap
 
 contract PressStorageV1 {
-
     /**
      * @notice Address of router contract
-     */    
+     */
     address public router;
 
     /**
      * @notice Name of Press
-     */        
+     */
     string public name;
 
     /**
      * @notice Press settings
-     */        
-    IPressTypesV1.Settings public settings;    
+     */
+    IPressTypesV1.Settings public settings;
 
     /**
      * @notice Pointer to encoded data stored at press level
-     */    
+     */
     address public pressData;
 }

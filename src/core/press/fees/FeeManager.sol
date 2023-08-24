@@ -30,12 +30,8 @@ contract FeeManager {
     function _handleFees(uint256 numStorageSlots) internal {
         uint256 totalFee = fee * numStorageSlots;
         if (msg.value != totalFee) revert IPress.Incorrect_Msg_Value();
-        if (
-            !TransferUtils.safeSendETH(
-                feeRecipient,
-                totalFee,
-                TransferUtils.FUNDS_SEND_LOW_GAS_LIMIT
-            )
-        ) revert Fee_Transfer_Failed();
+        if (!TransferUtils.safeSendETH(feeRecipient, totalFee, TransferUtils.FUNDS_SEND_LOW_GAS_LIMIT)) {
+            revert Fee_Transfer_Failed();
+        }
     }
 }

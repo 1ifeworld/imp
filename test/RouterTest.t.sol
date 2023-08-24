@@ -25,14 +25,15 @@ contract RouterTest is Test {
     LogicRouterV1 logic;
     MockRenderer renderer;
     address admin = address(0x123);
-
-    // MERKLE ROOT HARDCODE
-    bytes32 merkleRoot = 0x640c46ede06e553b55939cfbfe691196cd77036569f3459a72a23a803c2d0dd3;
-    address includedAddress_1 = 0xE7746f79bF98e685e6a1ac80D74d2935431041d5;
-    bytes32 includedAddress_1_Proof = 0xb3a751cbc121f97d50361c8c86ffc8b67e895e51f3df3d6f8bb965aac8a9b726;    
+    // NOTE: following merkle gymnastics conducted via lanyard.org
+    // Merkle root generated from address(0x123) and address(0x321)
+    bytes32 merkleRoot = 0xb494f4f51d001f39414763c301687a74a238d923b8c2f89162dd568edabce400;
+    // Proof value (convert to array) for address(0x123) on the merkleRoot provided above
+    bytes32 merkleProofForAdminAndRoot = 0x71ef4e3ac02bbfe589f919cd478796b80265f2fa8354195b4d85495ddb4fbc5f;
 
     // Set up called before each test
     function setUp() public {
+
         router = new Router();
         press = new PressTokenless(feeRecipient, fee);
         factory = new Factory(address(router), address(press));
@@ -46,16 +47,12 @@ contract RouterTest is Test {
         router.registerFactories(factoryToRegister, statusToRegister);
     }  
 
-
-    
-    // address constant head = address(0x1);
-
-    function test_send() public {
+    function test_sendData() public {
         // setup tokenless press
         PressTokenless activePress = PressTokenless(payable(createGenericPress()));
         // setup merkle proof for included address
         bytes32[] memory proof = new bytes32[](1);
-        proof[0] = includedAddress_1_Proof;
+        proof[0] = merkleProofForAdminAndRoot;
         // setup listings array
         IPressTokenlessTypesV1.Listing[] memory listings = new IPressTokenlessTypesV1.Listing[](1);
         listings[0] = IPressTokenlessTypesV1.Listing({
@@ -75,20 +72,6 @@ contract RouterTest is Test {
         require(admin.balance == 1 ether - fees, "fees not correct");
         require(feeRecipient.balance == fees, "fees not correcthg");        
     }
-
-    // function test_transmit() public {
-    //     Counter.Listing[] memory listings = new Counter.Listing[](1);
-    //     listings[0] = Counter.Listing({
-    //         chainId: 1,
-    //         tokenId: 1,
-    //         listingAddress: address(0x123),
-    //         hasTokenId: true
-    //     });        
-    //     bytes memory data = abi.encode(listings);
-
-    //     vm.prank(head);
-    //     counter.transmitData(head, data);
-    // }
 
     function createGenericPress() public returns (address) { 
         // setup initialAdmins array for logic init

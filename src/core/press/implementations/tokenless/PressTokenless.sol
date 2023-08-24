@@ -2,8 +2,9 @@
 pragma solidity 0.8.20;
 
 import "sstore2/SSTORE2.sol";
-import {ReentrancyGuardUpgradeable} from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {Initializable} from "openzeppelin-contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "openzeppelin-contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "openzeppelin-contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import {IPress} from "../../interfaces/IPress.sol";
 import {IPressTokenlessTypesV1} from "./types/IPressTokenlessTypesV1.sol";
@@ -28,40 +29,41 @@ contract PressTokenless is
     FeeManager,
     Version(1),
     FundsReceiver,
+    Initializable,
     UUPSUpgradeable,
     ReentrancyGuardUpgradeable,
     OwnableUpgradeable
 {
-
     ////////////////////////////////////////////////////////////
-    // STORAGE 
-    ////////////////////////////////////////////////////////////  
+    // STORAGE
+    ////////////////////////////////////////////////////////////
 
     uint256 constant DATA_SCHEMA = 2;
     mapping(uint256 => address) public idOrigin;
 
     ////////////////////////////////////////////////////////////
-    // ERRORS 
-    ////////////////////////////////////////////////////////////      
+    // ERRORS
+    ////////////////////////////////////////////////////////////
 
     error No_Access();
     error Overwrite_Not_Supported();
+    error Cant_Remove_Nonexistent_Id();
 
     ////////////////////////////////////////////////////////////
-    // CONSTRUCTOR 
-    ////////////////////////////////////////////////////////////    
+    // CONSTRUCTOR
+    ////////////////////////////////////////////////////////////
 
     constructor(address _feeRecipient, uint256 _fee) FeeManager(_feeRecipient, _fee) {}
 
     ////////////////////////////////////////////////////////////
-    // INITIALIZER 
+    // INITIALIZER
     ////////////////////////////////////////////////////////////
 
     /**
-    * @notice Initializes a new, creator-owned proxy of Press.sol
-    */
+     * @notice Initializes a new, creator-owned proxy of Press.sol
+     */
     function initialize(
-        string memory pressName, 
+        string memory pressName,
         address initialOwner,
         address routerAddr,
         address logic,
@@ -76,10 +78,10 @@ contract PressTokenless is
 
         // Setup reentrancy guard
         __ReentrancyGuard_init();
-        // Setup owner for Ownable 
+        // Setup owner for Ownable
         __Ownable_init(initialOwner);
         // Setup UUPS
-        __UUPSUpgradeable_init();   
+        __UUPSUpgradeable_init();
 
         // Set things
         router = routerAddr;
@@ -89,7 +91,7 @@ contract PressTokenless is
         ++settings.counter; // this acts as an initialization check since will be 0 before init
         settings.logic = logic;
         settings.renderer = renderer;
-        
+
         // Initialize logic + renderer
         ILogic(logic).initializeWithData(logicInit);
         IRenderer(renderer).initializeWithData(rendererInit);
@@ -97,15 +99,19 @@ contract PressTokenless is
 
     ////////////////////////////////////////////////////////////
     // WRITE FUNCTIONS
-    ////////////////////////////////////////////////////////////      
+    ////////////////////////////////////////////////////////////
 
     //////////////////////////////
     // EXTERNAL
-    //////////////////////////////  
+    //////////////////////////////
 
     /* ~~~ Token Data Interactions ~~~ */
 
-    function handleSend(address sender, bytes memory data) external payable returns (uint256[] memory, bytes memory, uint256) {
+    function handleSend(address sender, bytes memory data)
+        external
+        payable
+        returns (uint256[] memory, bytes memory, uint256)
+    {
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();
         // Decode incoming data
@@ -123,39 +129,50 @@ contract PressTokenless is
             ++settings.counter;
         }
         // Handle system fees for given quantity of data
-        _handleFees(quantity);      
+        _handleFees(quantity);
         // Send response back to router for event emission
         return (ids, abi.encode(listings), DATA_SCHEMA);
-    }     
+    }
 
-    function handleOverwrite(address sender, bytes memory data) external payable returns (uint256[] memory) {
+    // NOTE: This function is not supported is this Press implementation
+    function handleOverwrite(address sender, bytes memory data)
+        external
+        payable
+        returns (uint256[] memory, bytes memory, uint256)
+    {
         revert Overwrite_Not_Supported();
-    }             
+    }
 
     function handleRemove(address sender, bytes memory data) external payable returns (uint256[] memory) {
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();
         // Decode incoming data
-        (uint256[] memory ids) = abi.decode(data, (uint256[]));
+        uint256[] memory ids = abi.decode(data, (uint256[]));
         // Increment id counter for each piece of data
         for (uint256 i; i < ids.length; ++i) {
+            // Confirm target id exists
+            if (idOrigin[ids[i]] == address(0)) {
+                revert Cant_Remove_Nonexistent_Id();
+            }
             // Request remove access from logic contract for given sender + id
-            if (!ILogic(settings.logic).getRemoveAccess(sender, ids[i])) revert No_Access();            
-        }    
+            if (!ILogic(settings.logic).getRemoveAccess(sender, ids[i])) {
+                revert No_Access();
+            }
+        }
         // Send response back to router for event emission
         return ids;
-    }                 
+    }
 
-    /* ~~~ Press Data Interactions ~~~ */          
+    /* ~~~ Press Data Interactions ~~~ */
 
-    function updatePressData(address sender, bytes memory data) external payable returns (address) {        
-        if (msg.sender != router) revert Sender_Not_Router();        
+    function updatePressData(address sender, bytes memory data) external payable returns (address) {
+        if (msg.sender != router) revert Sender_Not_Router();
         /* 
             Could put logic check here for sender
-        */        
+        */
         // Hardcoded `1` value since this function only updates 1 storage slot
-        _handleFees(1);        
-        (bytes memory dataToStore) = abi.decode(data, (bytes));        
+        _handleFees(1);
+        bytes memory dataToStore = abi.decode(data, (bytes));
         if (dataToStore.length == 0) {
             delete pressData;
             return pressData;
@@ -164,19 +181,19 @@ contract PressTokenless is
                 Could put fee logic here, for when people are storing data
                 Could even check if press data is zero or not 
                 Otherwise maybe best to make this function non payable
-            */      
+            */
             pressData = SSTORE2.write(dataToStore);
             return pressData;
         }
-    }        
+    }
 
     //////////////////////////////
     // INTERNAL
-    //////////////////////////////               
+    //////////////////////////////
 
     ////////////////////////////////////////////////////////////
     // READ FUNCTIONS
-    ////////////////////////////////////////////////////////////     
+    ////////////////////////////////////////////////////////////
 
     // TODO: add some type of check whether the id exists or not?
     function getIdOrigin(uint256 id) external view returns (address) {
@@ -185,21 +202,10 @@ contract PressTokenless is
 
     //////////////////////////////
     // INTERNAL
-    //////////////////////////////        
+    //////////////////////////////
 
     /**
      * @param newImplementation proposed new upgrade implementation
      */
-    function _authorizeUpgrade(address newImplementation) internal override {}      
-  
-    /**
-     * @notice Helper function
-     */    
-    function _generateArrayOfOnes(uint256 quantity) internal pure returns (uint256[] memory) {
-        uint256[] memory arrayOfOnes = new uint256[](quantity);
-        for (uint256 i; i < quantity; ++i) {
-            arrayOfOnes[i] = 1;
-        }
-        return arrayOfOnes;
-    } 
+    function _authorizeUpgrade(address newImplementation) internal override {}
 }
