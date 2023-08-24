@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
 import {ILogic} from "./ILogic.sol";
+import {IPress} from "../interfaces/IPress.sol";
 
 contract LogicRouterV1 is ILogic {
 
@@ -35,13 +36,34 @@ contract LogicRouterV1 is ILogic {
     // EXTERNAL
     ////////////////////////////// 
 
-    function transmitRequest(
+    // NOTE:
+    //  sender in inputs = the account initiating txn at router
+    //  msg.sender = the press calling getSendAccess in its `handleSend` call
+    function getSendAccess(
         address sender, 
         uint256 quantity, 
         bytes32[] memory merkleProof
     ) external view returns (bool) {
-        return MerkleProofLib.verify(merkleProof, pressMerkleRoot[msg.sender], keccak256(abi.encodePacked(sender)));
+        // return MerkleProofLib.verify(merkleProof, pressMerkleRoot[msg.sender], keccak256(abi.encodePacked(sender)));
+        // NOTE: currently have hardcoded included address in for testing
+        return MerkleProofLib.verify(
+            merkleProof, 
+            pressMerkleRoot[msg.sender], 
+            keccak256(abi.encodePacked(0xE7746f79bF98e685e6a1ac80D74d2935431041d5)
+        ));
     } 
+
+    // NOTE:
+    //  sender in inputs = the account initiating txn at router
+    //  msg.sender = the press calling getSendAccess in its `handleSend` call
+    function getRemoveAccess(address sender, uint256 id) external view returns (bool) {
+        // Grant access to sender if they are an admin
+        if (pressAdmins[msg.sender][sender]) return true;
+        // Grant access to sender if they are the originator of the id
+        if (IPress(msg.sender).getIdOrigin(id) == sender) return true;
+        // Deny access to sender if none of the above is true
+        return false;
+    }     
 
     function initializeWithData(bytes memory data) external {
         // Cache sender address

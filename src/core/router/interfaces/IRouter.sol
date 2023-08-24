@@ -19,25 +19,13 @@ interface IRouter {
         address factory,
         address newPress
     );
-    event TokenDataStored(
+    event DataSent(
         address sender,
         address press,
         uint256[] ids,
-        bytes data,
-        uint256 dataScehma
+        bytes response,
+        uint256 schema
     );
-
-    event TokenDataOverwritten(
-        address sender,
-        address press,
-        uint256[] tokenIds,
-        address[] pointers
-    );    
-    event TokenDataRemoved(
-        address sender,
-        address press,
-        uint256[] tokenIds
-    );       
     event PressDataUpdated(
         address sender,
         address press,

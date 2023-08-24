@@ -38,12 +38,14 @@ contract PressTokenless is
     ////////////////////////////////////////////////////////////  
 
     uint256 constant DATA_SCHEMA = 2;
+    mapping(uint256 => address) public idOrigin;
 
     ////////////////////////////////////////////////////////////
     // ERRORS 
     ////////////////////////////////////////////////////////////      
 
     error No_Access();
+    error Overwrite_Not_Supported();
 
     ////////////////////////////////////////////////////////////
     // CONSTRUCTOR 
@@ -103,18 +105,44 @@ contract PressTokenless is
 
     /* ~~~ Token Data Interactions ~~~ */
 
-    function storeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, bytes memory, uint256) {
+    function handleSend(address sender, bytes memory data) external payable returns (uint256[] memory, bytes memory, uint256) {
+        // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();
+        // Decode incoming data
         (bytes32[] memory merkleProof, Listing[] memory listings) = abi.decode(data, (bytes32[], Listing[]));
+        // Initialize ids memory array for return
         uint256[] memory ids = new uint256[](listings.length);
-        if (!ILogic(settings.logic).transmitRequest(sender, listings.length, merkleProof)) revert No_Access();
+        // Request send access from logic contract for given sender, quantity, and merkleProof
+        if (!ILogic(settings.logic).getSendAccess(sender, listings.length, merkleProof)) revert No_Access();
+        // Store sender + increment id counter for each piece of data
         for (uint256 i; i < listings.length; ++i) {
             ids[i] = settings.counter;
+            // idOrigin[i] = sender;
             ++settings.counter;
         }
+        // Handle system fees for given quantity of data
         _handleFees(listings.length);      
+        // Send response back to router for event emission
         return (ids, abi.encode(listings), DATA_SCHEMA);
-    }         
+    }     
+
+    function handleOverwrite(address sender, bytes memory data) external payable returns (uint256[] memory) {
+        revert Overwrite_Not_Supported();
+    }             
+
+    function handleRemove(address sender, bytes memory data) external payable returns (uint256[] memory) {
+        // Confirm transaction coming from router
+        if (msg.sender != router) revert Sender_Not_Router();
+        // Decode incoming data
+        (uint256[] memory ids) = abi.decode(data, (uint256[]));
+        // Increment id counter for each piece of data
+        for (uint256 i; i < ids.length; ++i) {
+            // Request remove access from logic contract for given sender + id
+            if (!ILogic(settings.logic).getRemoveAccess(sender, ids[i])) revert No_Access();            
+        }    
+        // Send response back to router for event emission
+        return ids;
+    }                 
 
     /* ~~~ Press Data Interactions ~~~ */          
 
@@ -147,6 +175,11 @@ contract PressTokenless is
     ////////////////////////////////////////////////////////////
     // READ FUNCTIONS
     ////////////////////////////////////////////////////////////     
+
+    // TODO: add some type of check whether the id exists or not?
+    function getIdOrigin(uint256 id) external view returns (address) {
+        return idOrigin[id];
+    }
 
     //////////////////////////////
     // INTERNAL

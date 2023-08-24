@@ -24,6 +24,8 @@ interface IPress {
     // FUNCTIONS
     ////////////////////////////////////////////////////////////
 
+    function getIdOrigin(uint256 id) external view returns (address);
+
     /// @notice Initializes a PressProxy
     function initialize(        
         string memory pressName, 
@@ -39,5 +41,5 @@ interface IPress {
     // function storeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, address[] memory);
     // function overwriteTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, address[] memory);
     // function removeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory);
-    function storeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, bytes memory, uint256);
+    function handleSend(address sender, bytes memory data) external payable returns (uint256[] memory, bytes memory, uint256);
 }
