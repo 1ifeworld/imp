@@ -139,7 +139,7 @@ contract PressTransmitterListings is
         return (ids, abi.encode(listings), DATA_SCHEMA);
     }
 
-    // NOTE: This function is not supported is this Press implementation
+    // NOTE: This function is not supported in this Press implementation
     function handleOverwrite(address sender, bytes memory data)
         external
         payable
@@ -196,7 +196,7 @@ contract PressTransmitterListings is
         return IRenderer(settings.renderer).renderPressURI(pressDataPointer);
     }
 
-    // TODO: add some type of check whether the id exists or not?
+    // TODO: add some type of check whether the id exists or not.
     function getIdOrigin(uint256 id) external view returns (address) {
         return idOrigin[id];
     }
