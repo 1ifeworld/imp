@@ -53,8 +53,9 @@ contract LogicTransmitterMerkleAdmin is ILogic {
         view
         returns (bool)
     {
-        // return MerkleProofLib.verify(merkleProof, pressMerkleRoot[msg.sender], keccak256(abi.encodePacked(sender)));
-        // NOTE: currently have hardcoded included address in for testing
+        // Grant access to sender if they are an admin
+        if (pressAdmins[msg.sender][sender]) return true;
+        // If not admin, run sender address through merkle tree test. Return true if included, false if not
         return MerkleProofLib.verify(merkleProof, pressMerkleRoot[msg.sender], keccak256(abi.encodePacked(sender)));
     }
 
