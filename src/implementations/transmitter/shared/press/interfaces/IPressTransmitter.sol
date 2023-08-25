@@ -1,0 +1,10 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.20;
+
+interface IPressTransmitter {
+    ////////////////////////////////////////////////////////////
+    // FUNCTIONS
+    ////////////////////////////////////////////////////////////
+
+    function getIdOrigin(uint256 id) external view returns (address);
+}

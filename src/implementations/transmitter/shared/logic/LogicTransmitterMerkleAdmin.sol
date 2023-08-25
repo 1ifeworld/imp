@@ -2,10 +2,10 @@
 pragma solidity 0.8.20;
 
 import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
-import {ILogic} from "./ILogic.sol";
-import {IPress} from "../interfaces/IPress.sol";
+import {ILogic} from "../../../../core/press/interfaces/ILogic.sol";
+import {IPressTransmitter} from "../press/interfaces/IPressTransmitter.sol";
 
-contract LogicRouterV1 is ILogic {
+contract LogicTransmitterMerkleAdmin is ILogic {
     ////////////////////////////////////////////////////////////
     // STORAGE
     ////////////////////////////////////////////////////////////
@@ -57,7 +57,7 @@ contract LogicRouterV1 is ILogic {
         // Grant access to sender if they are an admin
         if (pressAdmins[msg.sender][sender]) return true;
         // Grant access to sender if they are the originator of the id
-        if (IPress(msg.sender).getIdOrigin(id) == sender) return true;
+        if (IPressTransmitter(msg.sender).getIdOrigin(id) == sender) return true;
         // Deny access to sender if none of the above is true
         return false;
     }
@@ -69,7 +69,7 @@ contract LogicRouterV1 is ILogic {
         // Grant access to sender if they are an admin
         if (pressAdmins[msg.sender][sender]) return true;
         // Grant access to sender if they are the originator of the id
-        if (IPress(msg.sender).getIdOrigin(id) == sender) return true;
+        if (IPressTransmitter(msg.sender).getIdOrigin(id) == sender) return true;
         // Deny access to sender if none of the above is true
         return false;
     }    

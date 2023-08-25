@@ -25,21 +25,7 @@ interface IPress {
 
     function getIdOrigin(uint256 id) external view returns (address);
 
-    /// @notice Initializes a PressProxy
-    function initialize(
-        string memory pressName,
-        address initialOwner,
-        address routerAddr,
-        address logic,
-        bytes memory logicInit,
-        address renderer,
-        bytes memory rendererInit
-    ) external;
-
     function updatePressData(address press, bytes memory data) external payable returns (address);
-    // function storeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, address[] memory);
-    // function overwriteTokenData(address sender, bytes memory data) external payable returns (uint256[] memory, address[] memory);
-    // function removeTokenData(address sender, bytes memory data) external payable returns (uint256[] memory);
     function handleSend(address sender, bytes memory data)
         external
         payable
