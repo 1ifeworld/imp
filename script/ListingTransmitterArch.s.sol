@@ -7,6 +7,7 @@ import "forge-std/Script.sol";
 import {Router} from "../src/core/router/Router.sol";
 import {FactoryTransmitterListings} from "../src/implementations/transmitter/listings/factory/FactoryTransmitterListings.sol";
 import {PressTransmitterListings} from "../src/implementations/transmitter/listings/press/PressTransmitterListings.sol";
+import {IListing} from "../src/implementations/transmitter/listings/types/IListing.sol";
 import {LogicTransmitterMerkleAdmin} from "../src/implementations/transmitter/shared/logic/LogicTransmitterMerkleAdmin.sol";
 import {RendererPressData} from "../src/implementations/transmitter/shared/renderer/RendererPressData.sol";
 
@@ -43,6 +44,7 @@ contract DeployCore is Script {
         router.registerFactories(factoryToRegister, statusToRegister);
 
         address newListingsTransmitterPress = createListingsTransmitterPress();
+        sendDataToDeployedPress(newListingsTransmitterPress);
 
         vm.stopBroadcast();
     }
@@ -68,6 +70,22 @@ contract DeployCore is Script {
         (address newPress, address newPressDataPointer) = router.setupPress(address(factory), abi.encode(inputs));
         return newPress;
     }        
+
+    function sendDataToDeployedPress(address targetPress) public {
+        // setup empty merkle proof -- will only work if sender is admin on press
+        bytes32[] memory emptyProof = new bytes32[](1);
+        // setup listings array
+        IListing.Listing[] memory listings = new IListing.Listing[](1);
+        listings[0] = IListing.Listing({
+            chainId: 7777777,
+            tokenId: 17,
+            listingAddress: address(0x7777777),
+            hasTokenId: true
+        });
+        // setup encoded inputs for sendData function
+        bytes memory encodedData = abi.encode(emptyProof, listings);        
+        router.sendData{value: fee}(targetPress, encodedData);
+    }
 }
 
 // ======= DEPLOY SCRIPTS =====
