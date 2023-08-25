@@ -124,8 +124,13 @@ contract PressTransmitterListings is
         if (!ILogic(settings.logic).getSendAccess(sender, quantity, merkleProof)) revert No_Access();
         // Store sender + increment id counter for each piece of data
         for (uint256 i; i < quantity; ++i) {
-            ids[i] = settings.counter;
-            idOrigin[i] = sender;
+            // Cache current value of settings.counter to save SLOADs
+            uint256 localCounter = settings.counter;
+            // Update function id memory array for return
+            ids[i] = localCounter;
+            // Record sender address for given id
+            idOrigin[localCounter] = sender;
+            // Increment Press id counter
             ++settings.counter;
         }
         // Handle system fees for given quantity of data
