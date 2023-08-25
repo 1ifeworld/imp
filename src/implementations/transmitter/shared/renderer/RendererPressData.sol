@@ -2,9 +2,9 @@
 pragma solidity 0.8.20;
 
 import "sstore2/SSTORE2.sol";
-import {IRenderer} from "../../../src/core/press/interfaces/IRenderer.sol";
+import {IRenderer} from "../../../../core/press/interfaces/IRenderer.sol";
 
-contract MockRenderer {
+contract RendererPressData is IRenderer {
 
     ////////////////////////////////////////////////////////////
     // FUNCTIONS
@@ -15,6 +15,7 @@ contract MockRenderer {
 
     /// @notice Returns string press URI from a provided sstore2 pointer
     function renderPressURI(address pointer) external view returns (string memory pressURI) {
+        if (pointer == address(0)) return "";
         return pressURI = abi.decode(SSTORE2.read(pointer), (string));
-    } 
+    }
 }

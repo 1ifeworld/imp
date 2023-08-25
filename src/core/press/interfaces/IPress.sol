@@ -23,8 +23,9 @@ interface IPress {
     // FUNCTIONS
     ////////////////////////////////////////////////////////////
 
-    function getIdOrigin(uint256 id) external view returns (address);
-
+    //////////////////////////////
+    // WRITE
+    //////////////////////////////
     function updatePressData(address press, bytes memory data) external payable returns (address);
     function handleSend(address sender, bytes memory data)
         external
@@ -35,4 +36,10 @@ interface IPress {
         payable
         returns (uint256[] memory, bytes memory, uint256);
     function handleRemove(address sender, bytes memory data) external payable returns (uint256[] memory);
+
+    //////////////////////////////
+    // READ
+    //////////////////////////////    
+
+    function contractURI() external view returns (string memory);
 }

@@ -39,6 +39,14 @@ contract LogicTransmitterMerkleAdmin is ILogic {
 
     // NOTE:
     //  sender in inputs = the account initiating txn at router
+    //  msg.sender = the press calling getPressDataAccess in its `updatePressData` call
+    function getPressDataAccess(address sender) external view returns (bool) {
+        // Grant access to sender if they are admin, deny if not
+        return pressAdmins[msg.sender][sender] ? true : false;
+    }        
+
+    // NOTE:
+    //  sender in inputs = the account initiating txn at router
     //  msg.sender = the press calling getSendAccess in its `handleSend` call
     function getSendAccess(address sender, uint256 quantity, bytes32[] memory merkleProof)
         external

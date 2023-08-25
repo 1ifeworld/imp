@@ -12,7 +12,7 @@ import {IPress} from "../src/core/press/interfaces/IPress.sol";
 import {IPressTypesV1} from "../src/core/press/types/IPressTypesV1.sol";
 import {IListing} from "../src/implementations/transmitter/listings/types/IListing.sol";
 import {LogicTransmitterMerkleAdmin} from "../src/implementations/transmitter/shared/logic/LogicTransmitterMerkleAdmin.sol";
-import {MockRenderer} from "./mocks/renderer/MockRenderer.sol";
+import {RendererPressData} from "../src/implementations/transmitter/shared/renderer/RendererPressData.sol";
 
 contract RouterTest is Test {
  
@@ -23,7 +23,7 @@ contract RouterTest is Test {
     address feeRecipient = address(0x999);
     uint256 fee = 0.0005 ether;    
     LogicTransmitterMerkleAdmin logic;
-    MockRenderer renderer;
+    RendererPressData renderer;
     address admin = address(0x123);
     // NOTE: following merkle gymnastics conducted via lanyard.org
     // Merkle root generated from address(0x123) and address(0x321)
@@ -38,7 +38,7 @@ contract RouterTest is Test {
         press = new PressTransmitterListings(feeRecipient, fee);
         factory = new FactoryTransmitterListings(address(router), address(press));
         logic = new LogicTransmitterMerkleAdmin();
-        renderer = new MockRenderer();
+        renderer = new RendererPressData();
         
         address[] memory factoryToRegister = new address[](1);
         factoryToRegister[0] = address(factory);
@@ -80,12 +80,14 @@ contract RouterTest is Test {
         // setup inputs for router setupPress call
         FactoryTransmitterListings.Inputs memory inputs = FactoryTransmitterListings.Inputs({
             pressName: "River",
+            pressData: abi.encode("Press ContractURI"),
             initialOwner: admin,
             logic: address(logic),
             logicInit: abi.encode(initialAdmins, merkleRoot),
             renderer: address(renderer),
             rendererInit: new bytes(0)
         });
-        return router.setupPress(address(factory), abi.encode(inputs));   
+        (address newPress, address newPressDataPointer) = router.setupPress(address(factory), abi.encode(inputs));
+        return newPress;
     }    
 }

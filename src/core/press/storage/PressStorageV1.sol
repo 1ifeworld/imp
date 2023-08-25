@@ -26,5 +26,5 @@ contract PressStorageV1 {
     /**
      * @notice Pointer to encoded data stored at press level
      */
-    address public pressData;
+    address public pressDataPointer;
 }
