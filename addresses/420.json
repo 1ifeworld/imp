@@ -1,7 +1,7 @@
 {
-    "Router": "0x03866b167BFaC53AE1556844a5e7fD55712a70B0",
-    "FactoryTransmitterListings": "0x0A4838A8FC52c5Bb07947425c216D134f2c9Dc1F",
-    "PressTransmitterListings": "0xad3CcE78fD9599268801Bd657053160bbAD5b345",
-    "LogicTransmitterMerkleAdmin": "0xbd7bC045FcF9D24C11AF6B1c56Cd4579171e9a55",
-    "RendererPressData": "0xf5BbB3f465fA4d1b71C91D64D9b320e3Fbc17069"
+    "Router": "0x880253BF121374121fE21948DE3A426a695924ee",
+    "FactoryTransmitterListings": "0x785e41cEa803637A34E6a3EA15dD533526B33740",
+    "PressTransmitterListings": "0x4A6193dfcFD59d8FfdeDF04F0A6d39bb4349675d",
+    "LogicTransmitterMerkleAdmin": "0x4a38667ADcD14d47aB927140E83aAfA64B281E4c",
+    "RendererPressData": "0x85044D4bb1cf8Fc9DadA5b4F0A20b0Fda1076924"
 }
