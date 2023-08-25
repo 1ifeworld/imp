@@ -67,37 +67,34 @@ contract PressTransmitterListings is
      */
     function initialize(
         string memory pressName,
+        bytes memory pressData,
         address initialOwner,
         address routerAddr,
         address logic,
         bytes memory logicInit,
         address renderer,
         bytes memory rendererInit
-    ) external nonReentrant initializer {
-        // We are not initalizing the OZ 1155 implementation
-        // to save contract storage space and runtime
-        // since the only thing affected here is the uri.
-        // __ERC1155_init("");
-
+    ) external nonReentrant initializer returns (address) {
         // Setup reentrancy guard
         __ReentrancyGuard_init();
-        // Setup owner for Ownable
-        __Ownable_init(initialOwner);
         // Setup UUPS
         __UUPSUpgradeable_init();
-
-        // Set things
-        router = routerAddr;
-        name = pressName;
+        // Setup owner for Ownable
+        __Ownable_init(initialOwner);        
 
         // Set press storage
-        ++settings.counter; // this acts as an initialization check since will be 0 before init
+        router = routerAddr;
+        name = pressName;
+        pressDataPointer = SSTORE2.write(pressData);
         settings.logic = logic;
         settings.renderer = renderer;
+        ++settings.counter; // this acts as an initialization check since will be 0 before init
 
         // Initialize logic + renderer
         ILogic(logic).initializeWithData(logicInit);
         IRenderer(renderer).initializeWithData(rendererInit);
+
+        return pressDataPointer;
     }
 
     ////////////////////////////////////////////////////////////
@@ -169,25 +166,17 @@ contract PressTransmitterListings is
     /* ~~~ Press Data Interactions ~~~ */
 
     function updatePressData(address sender, bytes memory data) external payable returns (address) {
+        // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();
-        /* 
-            Could put logic check here for sender
-        */
-        // Hardcoded `1` value since this function only updates 1 storage slot
+        // Request pressData update access from logic contract for given sender
+        if (!ILogic(settings.logic).getPressDataAccess(sender)) revert No_Access();
+        // Decode incoming data to confirm type safety
+        string memory pressURI = abi.decode(data, (string));
+        // If no data to store, set pressData to address(0) and return it
+        if (data.length == 0) return pressDataPointer = address(0);
+        // If data to store, handle system fees, update pressData pointer and return it
         _handleFees(1);
-        bytes memory dataToStore = abi.decode(data, (bytes));
-        if (dataToStore.length == 0) {
-            delete pressData;
-            return pressData;
-        } else {
-            /* 
-                Could put fee logic here, for when people are storing data
-                Could even check if press data is zero or not 
-                Otherwise maybe best to make this function non payable
-            */
-            pressData = SSTORE2.write(dataToStore);
-            return pressData;
-        }
+        return pressDataPointer = SSTORE2.write(data);
     }
 
     //////////////////////////////
@@ -197,6 +186,10 @@ contract PressTransmitterListings is
     ////////////////////////////////////////////////////////////
     // READ FUNCTIONS
     ////////////////////////////////////////////////////////////
+
+    function contractURI() external view returns (string memory) {
+        return IRenderer(settings.renderer).renderPressURI(pressDataPointer);
+    }
 
     // TODO: add some type of check whether the id exists or not?
     function getIdOrigin(uint256 id) external view returns (address) {

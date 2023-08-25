@@ -43,31 +43,33 @@ contract Router is IRouter, Ownable, ReentrancyGuard {
         external
         payable
         nonReentrant
-        returns (address)
+        returns (address, address)
     {
         if (!factoryRegistry[factoryImpl]) revert Factory_Not_Registered();
-        address press = IFactory(factoryImpl).createPress(msg.sender, factoryInit);
+        (address press, address pressData) = IFactory(factoryImpl).createPress(msg.sender, factoryInit);
         pressRegistry[press] = true;
-        emit PressRegistered(msg.sender, factoryImpl, press);
-        return press;
+        emit PressRegistered(msg.sender, factoryImpl, press, pressData);
+        return (press, pressData);
     }
 
     function setupPressBatch(address[] memory factoryImpls, bytes[] memory factoryInits)
         external
         payable
         nonReentrant
-        returns (address[] memory)
+        returns (address[] memory, address[] memory)
     {
         if (factoryImpls.length != factoryInits.length) revert Input_Length_Mismatch();
-        address[] memory presses = new address[](factoryImpls.length);
+        address[] memory newPressArray = new address[](factoryImpls.length);
+        address[] memory newPressDataArray = new address[](factoryImpls.length);
         for (uint256 i; i < factoryImpls.length; ++i) {
             if (!factoryRegistry[factoryImpls[i]]) revert Factory_Not_Registered();
-            address press = IFactory(factoryImpls[i]).createPress(msg.sender, factoryInits[i]);
-            pressRegistry[press] = true;
-            presses[i] = press;
-            emit PressRegistered(msg.sender, factoryImpls[i], press);
+            (address newPress, address newPressData) = IFactory(factoryImpls[i]).createPress(msg.sender, factoryInits[i]);
+            pressRegistry[newPress] = true;
+            newPressArray[i] = newPress;
+            newPressDataArray[i] = newPressData;
+            emit PressRegistered(msg.sender, factoryImpls[i], newPress, newPressData);
         }
-        return presses;
+        return (newPressArray, newPressDataArray);
     }
 
     //////////////////////////////

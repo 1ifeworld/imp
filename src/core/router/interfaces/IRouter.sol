@@ -9,7 +9,7 @@ interface IRouter {
     //////////////////////////////////////////////////
 
     event FactoryRegistered(address sender, address[] factories, bool[] statuses);
-    event PressRegistered(address sender, address factory, address newPress);
+    event PressRegistered(address sender, address factory, address newPress, address newPressData);
     event PressDataUpdated(address sender, address press, address pointer);
     event DataSent(address sender, address press, uint256[] ids, bytes response, uint256 schema);
     event DataOverwritten(address sender, address press, uint256[] ids, bytes response, uint256 schema);

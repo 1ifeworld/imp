@@ -15,6 +15,7 @@ contract FactoryTransmitterListings is IFactory {
 
     struct Inputs {
         string pressName;
+        bytes pressData;
         address initialOwner;
         address logic;
         bytes logicInit;
@@ -52,7 +53,7 @@ contract FactoryTransmitterListings is IFactory {
 
     // dont think this needs a reentrancy guard, since a callback to the Factory mid createPress
     //      execution cant do anyting malicious? only function is to create another new press?
-    function createPress(address sender, bytes memory init) external returns (address) {
+    function createPress(address sender, bytes memory init) external returns (address, address) {
         if (msg.sender != router) revert Sender_Not_Router();
         /* 
             Could put factory logic check here for sender access
@@ -63,8 +64,9 @@ contract FactoryTransmitterListings is IFactory {
         // Configure ownership details in proxy constructor
         PressProxy newPress = new PressProxy(pressImpl, "");
         // Initialize PressProxy
-        PressTransmitterListings(payable(address(newPress))).initialize({
+        address newPressDataPointer = PressTransmitterListings(payable(address(newPress))).initialize({
             pressName: inputs.pressName,
+            pressData: inputs.pressData,
             initialOwner: inputs.initialOwner,
             routerAddr: router, // input comes from local storage not decode
             logic: inputs.logic,
@@ -72,6 +74,6 @@ contract FactoryTransmitterListings is IFactory {
             renderer: inputs.renderer,
             rendererInit: inputs.rendererInit
         });
-        return address(newPress);
+        return (address(newPress), newPressDataPointer);
     }
 }

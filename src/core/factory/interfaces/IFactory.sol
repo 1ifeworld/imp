@@ -7,5 +7,5 @@ interface IFactory {
     //////////////////////////////////////////////////
 
     /// @notice Deploys and initializes new press
-    function createPress(address sender, bytes memory init) external returns (address);
+    function createPress(address sender, bytes memory init) external returns (address, address);
 }
