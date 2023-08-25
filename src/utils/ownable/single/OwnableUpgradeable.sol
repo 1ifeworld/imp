@@ -98,7 +98,7 @@ abstract contract OwnableUpgradeable is IOwnableUpgradeable, Initializable {
     }
 
     /// @notice Resign ownership of contract
-    /// @dev only callably by the owner, dangerous call.
+    /// @dev only callable by the owner, dangerous call.
     function resignOwnership() public onlyOwner {
         _transferOwnership(address(0));
     }
