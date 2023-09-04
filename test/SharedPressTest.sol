@@ -43,8 +43,9 @@ contract SharedPressTest is Test {
             hasTokenId: true
         });
         // setup encoded inputs for sendDataV2 function
-        uint256 channelIdTarget = 1;
-        bytes memory encodedData = abi.encode(channelIdTarget, proof, listings);
+        uint256 counter = 1;
+        bytes32 channelHashTarget = keccak256(abi.encodePacked(address(sharedPress), counter));
+        bytes memory encodedData = abi.encode(channelHashTarget, proof, listings);
         // setup fees + distribute eth
         vm.deal(admin, 1 ether);
         vm.prank(admin);
