@@ -102,9 +102,14 @@ contract Router is IRouter, Ownable, ReentrancyGuard {
 
     /* EXPERIMENTAL */
 
+
     function sendDataV2(address press, bytes memory data) external payable nonReentrant {
         ISharedPress(press).handleSendV2{value: msg.value}(msg.sender, data);
     }
+
+    // function sendDataV3(address target, bytes memory data, uint256 path) external payable nonReentrant {
+    //     ISharedPress(target).handleSendGeneric{value: msg.value}(msg.sender, data, path);
+    // }
 
     /* HISTORIC */    
 

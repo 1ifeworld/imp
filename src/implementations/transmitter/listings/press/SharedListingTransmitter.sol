@@ -31,7 +31,7 @@ contract SharedListingTransmitter is
     ////////////////////////////////////////////////////////////
 
     event ChannelCreated(address creator, uint256 counter, string uri, bytes32 merkleRoot, address[] admins);
-    event DataStored(address sender, uint256 channelId, uint256[] ids, Listing[] listings);
+    event DataStored(address sender, uint256 channelId, uint256 endingIdCounter, Listing[] listings);
 
     ////////////////////////////////////////////////////////////
     // STORAGE
@@ -99,6 +99,33 @@ contract SharedListingTransmitter is
     // EXTERNAL
     //////////////////////////////
 
+    // function handleSendGeneric(address sender, bytes memory data, uint256 path) external payable {
+    //     // Confirm transaction coming from router
+    //     if (msg.sender != router) revert Sender_Not_Router();     
+    //     // check for path 1
+    //     if ()   
+    // }
+
+    // // NOTE: no access control, enforce elsewhere
+    // function handler_1(address sender, bytes memory data) internal {
+    //     // Increment channel counter
+    //     ++channelCounter;
+    //     // Cache channel counter
+    //     uint256 counter = channelCounter;
+    //     // Increment channelId counter;
+    //     ++channelIdCounter[counter];
+    //     // Decode init data
+    //     (string memory channelUri, bytes32 merkleRoot, address[] memory admins) =
+    //         abi.decode(data, (string, bytes32, address[]));
+    // }    
+
+    // // NOTE: no access control, enforce elsewhere
+    // function handler_2(address sender, bytes memory data) internal {
+    //     // Decode incoming data
+    //     (uint256 channelId, bytes32[] memory merkleProof, Listing[] memory listings) =
+    //         abi.decode(data, (uint256, bytes32[], Listing[]));
+    // }
+
     /* ~~~ Token Data Interactions ~~~ */
 
     function handleSendV2(address sender, bytes memory data) external payable {
@@ -109,8 +136,6 @@ contract SharedListingTransmitter is
             abi.decode(data, (uint256, bytes32[], Listing[]));
         // Cache data quantity
         uint256 quantity = listings.length;
-        // Initialize ids memory array for emission
-        uint256[] memory ids = new uint256[](quantity);
         // Grant access to sender if they are an admin or on merkle tree
         if (!channelAdmins[channelId][sender]) {
             if (!MerkleProofLib.verify(merkleProof, channelMerkleRoot[channelId], keccak256(abi.encodePacked(sender)))) {
@@ -119,12 +144,8 @@ contract SharedListingTransmitter is
         }
         // Store sender + increment id counter for each piece of data
         for (uint256 i; i < quantity; ++i) {
-            // Cache value of settings.counter
-            uint256 localCounter = channelIdCounter[channelId];
-            // Update function id memory array for return
-            ids[i] = localCounter;
             // Record sender address for given id
-            channelIdOrigin[localCounter] = sender;
+            channelIdOrigin[channelIdCounter[channelId]] = sender;
             // Increment channelId counter
             ++channelIdCounter[channelId];
         }
@@ -134,7 +155,7 @@ contract SharedListingTransmitter is
         emit DataStored(
             sender,
             channelId,
-            ids,
+            channelIdCounter[channelId],
             listings
         );
     }
