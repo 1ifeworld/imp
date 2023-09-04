@@ -6,6 +6,7 @@ import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 
 import {IRouter} from "./interfaces/IRouter.sol";
 import {IPress} from "../press/interfaces/IPress.sol";
+import {ISharedPress} from "../press/interfaces/ISharedPress.sol";
 import {IFactory} from "../factory/interfaces/IFactory.sol";
 
 /**
@@ -38,6 +39,19 @@ contract Router is IRouter, Ownable, ReentrancyGuard {
     //////////////////////////////
     // PRESS CREATION
     //////////////////////////////
+    
+    /* EXPERIMENTAL */
+
+    function setupPressV2(address sharedPress, bytes memory sharedPressInit) 
+        external
+        payable
+        nonReentrant
+    {
+        /* Get rid of concept of unregistered Presss ??? */
+        ISharedPress(sharedPress).initialize(msg.sender, sharedPressInit);
+    }
+
+    /* HISTORIC */
 
     function setupPress(address factoryImpl, bytes memory factoryInit)
         external
@@ -85,6 +99,14 @@ contract Router is IRouter, Ownable, ReentrancyGuard {
     }
 
     /* ~~~ Cell Data Interactions ~~~ */
+
+    /* EXPERIMENTAL */
+
+    function sendDataV2(address press, bytes memory data) external payable nonReentrant {
+        ISharedPress(press).handleSendV2{value: msg.value}(msg.sender, data);
+    }
+
+    /* HISTORIC */    
 
     function sendData(address press, bytes memory data) external payable nonReentrant {
         if (!pressRegistry[press]) revert Press_Not_Registered();
