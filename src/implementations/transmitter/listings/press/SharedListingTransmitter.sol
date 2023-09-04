@@ -6,14 +6,8 @@ import {ReentrancyGuard} from "openzeppelin-contracts/security/ReentrancyGuard.s
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
 
-import {IPress} from "../../../../core/press/interfaces/IPress.sol";
 import {ISharedPress} from "../../../../core/press/interfaces/ISharedPress.sol";
-import {ILogic} from "../../../../core/press/interfaces/ILogic.sol";
-import {IRenderer} from "../../../../core/press/interfaces/IRenderer.sol";
-import {IPressTypesV1} from "../../../../core/press/types/IPressTypesV1.sol";
-import {PressStorageV1} from "../../../../core/press/storage/PressStorageV1.sol";
 import {FeeManager} from "../../../../core/press/fees/FeeManager.sol";
-import {PressTransmitterStorageV1} from "../../shared/press/storage/PressTransmitterStorageV1.sol";
 import {IListing} from "../types/IListing.sol";
 
 import {TransferUtils} from "../../../../utils/TransferUtils.sol";
