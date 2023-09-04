@@ -138,13 +138,4 @@ contract SharedListingTransmitter is
             listings
         );
     }
-
-    ////////////////////////////////////////////////////////////
-    // READ FUNCTIONS
-    ////////////////////////////////////////////////////////////
-
-    // // TODO: add some type of check whether the id exists or not?
-    // function getIdOrigin(uint256 id) external view returns (address) {
-    //     return idOrigin[id];
-    // }
 }
