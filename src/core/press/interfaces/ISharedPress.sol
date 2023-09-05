@@ -29,4 +29,5 @@ interface ISharedPress {
      * @notice Processes data sent to channel
      */
     function handleSendV2(address sender, bytes memory data) external payable;
+    
 }

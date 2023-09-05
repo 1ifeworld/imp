@@ -32,6 +32,7 @@ contract SharedListingTransmitter is
 
     event ChannelCreated(address creator, uint256 counter, string uri, bytes32 merkleRoot, address[] admins);
     event DataStored(address sender, uint256 channelId, uint256 endingIdCounter, Listing[] listings);
+    event DataRemoved(address sender, uint256 channelId, uint256[] ids);
 
     ////////////////////////////////////////////////////////////
     // STORAGE
@@ -54,6 +55,7 @@ contract SharedListingTransmitter is
     error No_Access();
     error Overwrite_Not_Supported();
     error Cant_Remove_Nonexistent_Id();
+    error Id_Doesnt_Exist();
 
     ////////////////////////////////////////////////////////////
     // CONSTRUCTOR
@@ -77,7 +79,7 @@ contract SharedListingTransmitter is
         ++channelCounter;
         // Cache channel counter
         uint256 counter = channelCounter;
-        // Increment channelId counter;
+        // Increment channelId counter from 0 -> 1;
         ++channelIdCounter[counter];
         // Decode init data
         (string memory channelUri, bytes32 merkleRoot, address[] memory admins) =
@@ -99,35 +101,6 @@ contract SharedListingTransmitter is
     // EXTERNAL
     //////////////////////////////
 
-    // function handleSendGeneric(address sender, bytes memory data, uint256 path) external payable {
-    //     // Confirm transaction coming from router
-    //     if (msg.sender != router) revert Sender_Not_Router();     
-    //     // check for path 1
-    //     if ()   
-    // }
-
-    // // NOTE: no access control, enforce elsewhere
-    // function handler_1(address sender, bytes memory data) internal {
-    //     // Increment channel counter
-    //     ++channelCounter;
-    //     // Cache channel counter
-    //     uint256 counter = channelCounter;
-    //     // Increment channelId counter;
-    //     ++channelIdCounter[counter];
-    //     // Decode init data
-    //     (string memory channelUri, bytes32 merkleRoot, address[] memory admins) =
-    //         abi.decode(data, (string, bytes32, address[]));
-    // }    
-
-    // // NOTE: no access control, enforce elsewhere
-    // function handler_2(address sender, bytes memory data) internal {
-    //     // Decode incoming data
-    //     (uint256 channelId, bytes32[] memory merkleProof, Listing[] memory listings) =
-    //         abi.decode(data, (uint256, bytes32[], Listing[]));
-    // }
-
-    /* ~~~ Token Data Interactions ~~~ */
-
     function handleSendV2(address sender, bytes memory data) external payable {
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();
@@ -142,13 +115,8 @@ contract SharedListingTransmitter is
                 revert No_Access();
             }
         }
-        // Store sender + increment id counter for each piece of data
-        for (uint256 i; i < quantity; ++i) {
-            // Record sender address for given id
-            channelIdOrigin[channelIdCounter[channelId]] = sender;
-            // Increment channelId counter
-            ++channelIdCounter[channelId];
-        }
+        // Update channelId counter
+        channelIdCounter[channelId] = channelIdCounter[channelId] + quantity;
         // Handle system fees for given quantity of data
         _handleFees(quantity);
         // Emit data for indexing
@@ -159,4 +127,28 @@ contract SharedListingTransmitter is
             listings
         );
     }
+
+    function handleRemoveV2(address sender, bytes memory data) external payable {
+        // Confirm transaction coming from router
+        if (msg.sender != router) revert Sender_Not_Router();
+        // Decode incoming data
+        (uint256 channelId, bytes32[] memory merkleProof, uint256[] memory ids) =
+            abi.decode(data, (uint256, bytes32[], uint256[]));
+        // Grant access to sender if they are an admin or on merkle tree
+        if (!channelAdmins[channelId][sender]) {
+            if (!MerkleProofLib.verify(merkleProof, channelMerkleRoot[channelId], keccak256(abi.encodePacked(sender)))) {
+                revert No_Access();
+            }
+        }
+        // only allow ids removal
+        for (uint256 i; i < ids.length; ++i) {
+            if (ids[i] > channelIdCounter[channelId]) revert Id_Doesnt_Exist();
+        }
+        // Emit data for indexing
+        emit DataRemoved(
+            sender,
+            channelId,
+            ids
+        );
+    }    
 }

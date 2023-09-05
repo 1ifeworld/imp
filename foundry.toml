@@ -10,9 +10,9 @@ evm_version = 'paris'
 fs_permissions = [{ access = "read", path = "./out"}, { access = "read", path = "./broadcast"}, { access = "read", path = "./"}]
 
 [rpc_endpoints]
-opGoerli = "${RPC_URL}"
+opMainnet = "${RPC_URL}"
 
 [etherscan]
-opGoerli = { key = "${ETHERSCAN_API_KEY}" }
+opMainnet = { key = "${ETHERSCAN_API_KEY}" }
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
