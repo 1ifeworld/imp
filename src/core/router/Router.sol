@@ -5,11 +5,10 @@ import {ReentrancyGuard} from "openzeppelin-contracts/security/ReentrancyGuard.s
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 
 /**
- * @title RouterV2
- * @author Max Bochman
+ * @title Router
+ * @author Lifeworld
  */
-contract RouterV2 is ReentrancyGuard {
-
+contract Router is ReentrancyGuard, Ownable {
     //////////////////////////////////////////////////
     // TYPES
     //////////////////////////////////////////////////
@@ -22,57 +21,78 @@ contract RouterV2 is ReentrancyGuard {
 
     //////////////////////////////////////////////////
     // STORAGE
-    //////////////////////////////////////////////////    
+    //////////////////////////////////////////////////
 
+    uint256 public constant ROUTER_VERSION = 1;
     mapping(address => bool) public targetRegistry;
+    // Selectors must always be associated with a specific target
     mapping(address => mapping(bytes4 => bool)) public selectorRegistry;
-    uint256 targetRegistryCounter;
-    mapping(address => uint256) selectorRegistryCounter;
+    uint256 targetCounter;
+    mapping(address => uint256) selectorCounter;
+
+    //////////////////////////////////////////////////
+    // EVENTS
+    //////////////////////////////////////////////////
+
+    event TargetRegistered(address sender, address target, bytes4[] selectors);
+
+    event SelectorsAdded(address sender, address target, bytes4[] selectors);
 
     //////////////////////////////////////////////////
     // ERRORS
-    //////////////////////////////////////////////////    
+    //////////////////////////////////////////////////
 
     error Target_Already_Registered();
-    error Cannot_Register_ZeroAddress();
     error Selector_Already_Registered();
+    error Cannot_Register_ZeroAddress();
     error Input_Length_Mismatch();
     error Unregistered_Target();
     error Unregistered_Selector();
     error Call_Failed(CallInputs inputs);
 
     //////////////////////////////////////////////////
-    // TARGET + SELECTOR REGISTRATION
-    //////////////////////////////////////////////////    
+    // WRITE FUNCTIONS
+    //////////////////////////////////////////////////
 
-    // TODO: Add access control
-    function registerTarget(address target, bytes4[] memory selectors) external nonReentrant {
+    //////////////////////////////
+    // TARGET REGISTRATION
+    //////////////////////////////
+
+    function registerTarget(address target, bytes4[] memory selectors) external onlyOwner nonReentrant {
+        // Registration validity checks
         if (targetRegistry[target]) revert Target_Already_Registered();
         if (target == address(0)) revert Cannot_Register_ZeroAddress();
+        // Registration assignment
         targetRegistry[target] = true;
-        ++targetRegistryCounter;
         for (uint256 i; i < selectors.length; i++) {
             selectorRegistry[target][selectors[i]] = true;
         }
-        selectorRegistryCounter[target] += selectors.length;
+        // Update target + selector counters
+        ++targetCounter;
+        selectorCounter[target] += selectors.length;
+        // Emit data for indexing
+        emit TargetRegistered(msg.sender, target, selectors);
     }
 
-    // TODO: Add access control
-    function addSelectors(address target, bytes4[] memory selectors) external nonReentrant {
+    function addSelectors(address target, bytes4[] memory selectors) external onlyOwner nonReentrant {
+        // Target validity checks
         if (!targetRegistry[target]) revert Unregistered_Target();
+        // Selector validity check + assignment
         for (uint256 i; i < selectors.length; i++) {
             if (selectorRegistry[target][selectors[i]]) revert Selector_Already_Registered();
             selectorRegistry[target][selectors[i]] = true;
         }
-        selectorRegistryCounter[target] += selectors.length;
+        // Update selector counter
+        selectorCounter[target] += selectors.length;
+        // Emit data for indexing
+        emit SelectorsAdded(msg.sender, target, selectors);
     }
 
-    //////////////////////////////////////////////////
+    //////////////////////////////
     // TARGET CALLS
-    //////////////////////////////////////////////////        
+    //////////////////////////////
 
     function callTarget(CallInputs calldata callInputs) external payable nonReentrant {
-        if (!targetRegistry[callInputs.target]) revert Unregistered_Target();
         if (!selectorRegistry[callInputs.target][callInputs.selector]) revert Unregistered_Selector();
         (bool success,) = callInputs.target.call{value: msg.value}(
             abi.encodePacked(callInputs.selector, abi.encode(msg.sender, callInputs.data))
@@ -85,11 +105,9 @@ contract RouterV2 is ReentrancyGuard {
         payable
         nonReentrant
     {
-        // Cache msg.sender
         address sender = msg.sender;
         if (callInputs.length != callValues.length) revert Input_Length_Mismatch();
         for (uint256 i; i < callInputs.length; ++i) {
-            if (!targetRegistry[callInputs[i].target]) revert Unregistered_Target();
             if (!selectorRegistry[callInputs[i].target][callInputs[i].selector]) revert Unregistered_Selector();
             (bool success,) = callInputs[i].target.call{value: callValues[i]}(
                 abi.encodePacked(callInputs[i].selector, abi.encode(sender, callInputs[i].data))
@@ -106,11 +124,10 @@ contract RouterV2 is ReentrancyGuard {
     */
 
     function callTargetWithoutSender(CallInputs calldata callInputs) external payable nonReentrant {
-        if (!targetRegistry[callInputs.target]) revert Unregistered_Target();
         if (!selectorRegistry[callInputs.target][callInputs.selector]) revert Unregistered_Selector();
-        (bool success, bytes memory result) =
+        (bool success,) =
             callInputs.target.call{value: msg.value}(abi.encodePacked(callInputs.selector, callInputs.data));
-        require(success, string(result));
+        if (!success) revert Call_Failed(callInputs);
     }
 
     function callTargetMultiWithoutSender(CallInputs[] calldata callInputs, uint256[] calldata callValues)
@@ -120,12 +137,11 @@ contract RouterV2 is ReentrancyGuard {
     {
         if (callInputs.length != callValues.length) revert Input_Length_Mismatch();
         for (uint256 i; i < callInputs.length; ++i) {
-            if (!targetRegistry[callInputs[i].target]) revert Unregistered_Target();
             if (!selectorRegistry[callInputs[i].target][callInputs[i].selector]) revert Unregistered_Selector();
             (bool success,) = callInputs[i].target.call{value: callValues[i]}(
                 abi.encodePacked(callInputs[i].selector, callInputs[i].data)
             );
             if (!success) revert Call_Failed(callInputs[i]);
         }
-    }    
+    }
 }
