@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {TransferUtils} from "../../../utils/TransferUtils.sol";
+import {TransferUtils} from "../TransferUtils.sol";
 
 /**
  * @title FeeManager

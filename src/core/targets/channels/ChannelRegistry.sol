@@ -9,9 +9,8 @@ import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
 import {IChannelRegistry} from "./interfaces/IChannelRegistry.sol";
 import {IListing} from "./interfaces/IListing.sol";
 import {ChannelRegistryStorage} from "./storage/ChannelRegistryStorage.sol";
-import {FeeManager} from "../fees/FeeManager.sol";
 
-import {TransferUtils} from "../../../utils/TransferUtils.sol";
+import {FeeManager} from "../../../utils/fees/FeeManager.sol";
 import {FundsReceiver} from "../../../utils/FundsReceiver.sol";
 
 /**

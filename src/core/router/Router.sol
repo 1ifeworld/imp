@@ -3,12 +3,13 @@ pragma solidity 0.8.20;
 
 import {ReentrancyGuard} from "openzeppelin-contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
+import {FundsReceiver} from "../../utils/FundsReceiver.sol";
 
 /**
  * @title Router
  * @author Lifeworld
  */
-contract Router is ReentrancyGuard, Ownable {
+contract Router is ReentrancyGuard, Ownable, FundsReceiver {
     //////////////////////////////////////////////////
     // TYPES
     //////////////////////////////////////////////////
@@ -144,7 +145,4 @@ contract Router is ReentrancyGuard, Ownable {
             if (!success) revert Call_Failed(callInputs[i]);
         }
     }
-
-    //
-    receive() external payable {}    
 }
