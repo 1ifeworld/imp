@@ -13,6 +13,9 @@ interface IChannelRegistry is IListing {
     event ChannelCreated(address sender, uint256 counter, string uri, bytes32 merkleRoot, address[] admins);
     event DataStored(address sender, uint256 channelId, uint256 endingIdCounter, Listing[] listings);
     event DataRemoved(address sender, uint256 channelId, uint256[] ids);
+    event UriUpdated(address sender, uint256 channelId, string uri);
+    event MerkleRootUpdated(address sender, uint256 channelId, bytes32 merkleRoot);
+    event AdminsUpdated(address sender, uint256 channelId, address[] accounts, bool[] roles);     
 
     ////////////////////////////////////////////////////////////
     // ERRORS
