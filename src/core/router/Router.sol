@@ -144,4 +144,7 @@ contract Router is ReentrancyGuard, Ownable {
             if (!success) revert Call_Failed(callInputs[i]);
         }
     }
+
+    //
+    receive() external payable {}    
 }
