@@ -41,4 +41,19 @@ interface IChannelRegistry is IListing {
      * @notice Adds new data to channel
      */
     function addToChannel(address sender, bytes memory data) external payable;
+
+    /**
+     *
+     */
+    function updateUri(address sender, uint256 channelId, string memory uri) external;
+
+    /**
+     *
+     */
+    function updateMerkleRoot(address sender, uint256 channelId, bytes32 merkleRoot) external;
+
+    /**
+     *
+     */    
+    function updateAdmins(address sender, uint256 channelId, address[] memory accounts, bool[] memory roles) external;
 }

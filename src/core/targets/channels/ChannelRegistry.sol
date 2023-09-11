@@ -96,18 +96,18 @@ contract ChannelRegistry is
         emit DataRemoved(sender, channelId, broadcastIds);
     }
 
-    function updateUri(address sender, uint256 channelId, string memory uri) external payable {
+    function updateUri(address sender, uint256 channelId, string memory uri) external {
         if (!adminInfo[channelId][sender]) revert No_Access();
         emit UriUpdated(sender, channelId, uri);
     }
 
-    function updateMerkleRoot(address sender, uint256 channelId, bytes32 merkleRoot) external payable {
+    function updateMerkleRoot(address sender, uint256 channelId, bytes32 merkleRoot) external {
         if (!adminInfo[channelId][sender]) revert No_Access();
         merkleRootInfo[channelId] = merkleRoot;
         emit MerkleRootUpdated(sender, channelId, merkleRoot);
     }
 
-    function updateAdmins(address sender, uint256 channelId, address[] memory accounts, bool[] memory roles) external payable {
+    function updateAdmins(address sender, uint256 channelId, address[] memory accounts, bool[] memory roles) external {
         if (!adminInfo[channelId][sender]) revert No_Access();
         if (accounts.length != roles.length) revert Input_Length_Mismatch();
         for (uint256 i; i < accounts.length; ++i) {
