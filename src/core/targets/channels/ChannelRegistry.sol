@@ -68,10 +68,10 @@ contract ChannelRegistry is
                 revert No_Access();
             }
         }
-        // Update broadcastCounter for given channelId
-        broadcastCounter[channelId] += listings.length;
         // Handle system fees for given listings.length of data
         _handleFees(listings.length);
+        // Update broadcastCounter for given channelId
+        broadcastCounter[channelId] += listings.length;        
         // Emit data for indexing
         emit DataStored(sender, channelId, broadcastCounter[channelId], listings);
     }
