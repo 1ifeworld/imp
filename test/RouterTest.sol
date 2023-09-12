@@ -4,13 +4,19 @@ pragma solidity 0.8.20;
 import {Test, console2} from "forge-std/Test.sol";
 
 import {Router} from "../src/core/router/Router.sol";
+
 import {ChannelRegistry} from "../src/core/targets/channels/ChannelRegistry.sol";
 import {IChannelRegistry} from "../src/core/targets/channels/interfaces/IChannelRegistry.sol";
 import {IListing} from "../src/core/targets/channels/interfaces/IListing.sol";
 
+import {ERC1155Registry} from "../src/core/targets/tokens/ERC1155Registry.sol";
+import {IERC1155Registry} from "../src/core/targets/tokens/interfaces/IERC1155Registry.sol";
+import {MockSalesModule} from "./mocks/MockSalesModule.sol";
+
 contract RouterTest is Test {
     // PUBLIC TEST VARIABLES
     Router router;
+    /* Channel architecture */
     ChannelRegistry channelRegistry;
     ChannelRegistry channelRegistry2;
     address feeRecipient = address(0x999);
@@ -21,22 +27,71 @@ contract RouterTest is Test {
     bytes32 merkleRoot = 0xb494f4f51d001f39414763c301687a74a238d923b8c2f89162dd568edabce400;
     // Proof value (convert to array) for address(0x123) on the merkleRoot provided above
     bytes32 merkleProofForAdminAndRoot = 0x71ef4e3ac02bbfe589f919cd478796b80265f2fa8354195b4d85495ddb4fbc5f;
+    /* ERC1155 architecture */
+    ERC1155Registry erc1155Registry;
+    MockSalesModule mockSalesModule;
 
     // Set up called before each test
     function setUp() public {
         vm.startPrank(admin);
-        // deploy router + shared press
+        // deploy router + channel registry + erc1155 registry
         router = new Router();
         channelRegistry = new ChannelRegistry(address(router), feeRecipient, fee);
         channelRegistry2 = new ChannelRegistry(address(router), feeRecipient, fee);
-        // register sharesPress functions on router
-        bytes4[] memory selectors = new bytes4[](2);
-        selectors[0] = IChannelRegistry.newChannel.selector;
-        selectors[1] = IChannelRegistry.addToChannel.selector;
-        router.registerTarget(address(channelRegistry), selectors);
-        router.registerTarget(address(channelRegistry2), selectors);
+        erc1155Registry = new ERC1155Registry(address(router), feeRecipient, fee);
+        mockSalesModule = new MockSalesModule();
+        // register channel registry functions on router
+        bytes4[] memory channelSelectors = new bytes4[](2);
+        channelSelectors[0] = IChannelRegistry.newChannel.selector;
+        channelSelectors[1] = IChannelRegistry.addToChannel.selector;
+        router.registerTarget(address(channelRegistry), channelSelectors);
+        router.registerTarget(address(channelRegistry2), channelSelectors);
+        // register erc1155 registry functions on router     
+        bytes4[] memory erc1155Selectors = new bytes4[](1);
+        erc1155Selectors[0] = IERC1155Registry.createTokens.selector;
+        router.registerTarget(address(erc1155Registry), erc1155Selectors);        
         vm.stopPrank();
     }
+
+    function test_newToken() public {
+        // Setup createTokens data
+        ERC1155Registry.TokenInputs[] memory tokenInputs = new ERC1155Registry.TokenInputs[](1);
+        tokenInputs[0] = ERC1155Registry.TokenInputs({
+            salesModule: address(0),
+            uri: "testURI/...",
+            commands: new bytes(0)
+        });
+        bytes memory encodedData = abi.encode(admin, tokenInputs);
+        // Setup Router inputs
+        Router.CallInputs memory callInputs = Router.CallInputs({
+            target: address(erc1155Registry),
+            selector: IERC1155Registry.createTokens.selector,
+            data: encodedData
+        });        
+        // setup fees + distribute eth
+        vm.deal(admin, 1 ether);
+        vm.prank(admin);        
+        // Call router
+        router.callTarget{value: fee}(callInputs);         
+    }
+
+    function test_10NewTokens() public {
+        // Setup createTokens data
+        uint256 numTokens = 10;
+        ERC1155Registry.TokenInputs[] memory tokenInputs = generateTokenInputs(numTokens, address(0));
+        bytes memory encodedData = abi.encode(admin, tokenInputs);
+        // Setup Router inputs
+        Router.CallInputs memory callInputs = Router.CallInputs({
+            target: address(erc1155Registry),
+            selector: IERC1155Registry.createTokens.selector,
+            data: encodedData
+        });        
+        // setup fees + distribute eth
+        vm.deal(admin, 1 ether);
+        vm.prank(admin);        
+        // Call router
+        router.callTarget{value: fee * numTokens}(callInputs);         
+    }    
 
     function test_newChannel() public returns (address) {
         // setup initialAdmins array for admin init
@@ -136,5 +191,17 @@ contract RouterTest is Test {
             Router.CallInputs({target: target, selector: IChannelRegistry.newChannel.selector, data: initData});
         // Call router
         router.callTarget(callInputs);
+    }
+
+    function generateTokenInputs(uint256 quantity, address salesModule) internal returns (ERC1155Registry.TokenInputs[] memory) {
+        ERC1155Registry.TokenInputs[] memory tokenInputs = new ERC1155Registry.TokenInputs[](quantity);
+        for (uint256 i; i < quantity; ++i) {
+            tokenInputs[i] = ERC1155Registry.TokenInputs({
+                salesModule: salesModule,
+                uri: "testURI/...",
+                commands: new bytes(0)
+            });
+        }
+        return tokenInputs;
     }
 }
