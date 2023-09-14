@@ -48,6 +48,23 @@ contract ERC1155Registry is
     ////////////////////////////////////////////////////////////
 
     // TODO: could pass along desired recipient addres in encoded data
+    /*
+        NOTE: storage breakdown and room for optimizations
+        At the moment, the following data is being stored with each token
+
+        slot 1: uri. the ipfs string uri (66 bytes) is being sstored2 (roughly 50k gas), and then we are
+            storing the resulting pointer (22.5k gas). this means storing the uri = ~75k gas. not great
+        slot 2: admin. the desired admin address (ability to edit token medata + sale logic) is stored
+            for each token id (22.5k gas). unavoidable storage in this shared 1155 route.
+        slot 3 (optional): sales strategy. this is an optionally passed sales module that allows you
+            to kick off a sale for a token upon its creation (22.5k gas + x gas for necessary init data)
+
+        summary: The above means that right now, ~100k gas must be spent for each token to store its
+            uri metadata + admin, on top of the updates that happen in the base 1155 implementation
+            regarding user balance storage, token transfer events, etc. The good thing about 1155
+            is that the gas costs of the base storage/events are similar for single vs batch minting,
+            but the bad part about the additional storage we are adding is that it scales linearly.
+    */
     function createTokens(address sender, bytes memory data) external payable nonReentrant {
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();
@@ -57,23 +74,23 @@ contract ERC1155Registry is
         uint256 quantity = tokenInputs.length;
         // Init memory array for mint Ids
         uint256[] memory ids = new uint256[](quantity);
-        // Set uri + admin for each new token
+        // Set uri + admin for each new token        
         for (uint256 i; i < quantity; ++i) {
             ++counter;
-            uint256 cachedCounter = counter;
-            uriInfo[cachedCounter] = tokenInputs[i].uri;
+            uint256 cachedCounter = counter;            
+            uriInfo[cachedCounter] = SSTORE2.write(bytes(tokenInputs[i].uri));        
             adminInfo[cachedCounter][admin] = true;
             if (tokenInputs[i].salesModule != address(0)) {
                 saleInfo[cachedCounter] = tokenInputs[i].salesModule;
                 ISalesModule(tokenInputs[i].salesModule).setupToken(sender, cachedCounter, tokenInputs[i].commands);
             }
-            emit URI(tokenInputs[i].uri, cachedCounter);
             ids[i] = cachedCounter;
+            emit URI(tokenInputs[i].uri, cachedCounter);
         }
         // Handle system fees
         _handleFees(quantity);
         // Batch mint tokens to sender        
-        _batchMint(sender, ids, _single(quantity), new bytes(0));
+        _batchMint(sender, ids, _singleton(quantity), new bytes(0));
     }
 
     ////////////////////////////////////////////////////////////
@@ -81,14 +98,14 @@ contract ERC1155Registry is
     ////////////////////////////////////////////////////////////
 
     function uri(uint256 id) public view override returns (string memory) {
-        return uriInfo[id];
+        return string(SSTORE2.read(uriInfo[id]));
     }
 
     ////////////////////////////////////////////////////////////
     // TYPES
     ////////////////////////////////////////////////////////////
 
-    function _single(uint256 length) internal pure returns (uint256[] memory array) {
+    function _singleton(uint256 length) internal pure returns (uint256[] memory array) {
         array = new uint256[](length);
         for (uint256 i; i < length; ++i) {
             array[i] = 1;

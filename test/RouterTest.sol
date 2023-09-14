@@ -13,6 +13,14 @@ import {ERC1155Registry} from "../src/core/targets/tokens/ERC1155Registry.sol";
 import {IERC1155Registry} from "../src/core/targets/tokens/interfaces/IERC1155Registry.sol";
 import {MockSalesModule} from "./mocks/MockSalesModule.sol";
 
+contract StringStorage {
+    uint256 public counter;
+    mapping(uint256 => string) public stringInfo;
+    function store(string memory uri) external {
+        stringInfo[counter] = uri;
+    }
+}
+
 contract RouterTest is Test {
     // PUBLIC TEST VARIABLES
     Router router;
@@ -51,14 +59,14 @@ contract RouterTest is Test {
         erc1155Selectors[0] = IERC1155Registry.createTokens.selector;
         router.registerTarget(address(erc1155Registry), erc1155Selectors);        
         vm.stopPrank();
-    }
+    }    
 
     function test_newToken() public {
         // Setup createTokens data
         ERC1155Registry.TokenInputs[] memory tokenInputs = new ERC1155Registry.TokenInputs[](1);
         tokenInputs[0] = ERC1155Registry.TokenInputs({
             salesModule: address(0),
-            uri: "testURI/...",
+            uri: "ipfs://bafkreiden6msn3wycwto42hepsri2ztocoh3e36jl5mawvlem2xqkb7ffu",
             commands: new bytes(0)
         });
         bytes memory encodedData = abi.encode(admin, tokenInputs);
@@ -198,10 +206,21 @@ contract RouterTest is Test {
         for (uint256 i; i < quantity; ++i) {
             tokenInputs[i] = ERC1155Registry.TokenInputs({
                 salesModule: salesModule,
-                uri: "testURI/...",
+                uri: "ipfs://bafkreiden6msn3wycwto42hepsri2ztocoh3e36jl5mawvlem2xqkb7ffu",
                 commands: new bytes(0)
             });
         }
         return tokenInputs;
     }
+
+    function test_stringStorage() public {
+        StringStorage sStorage = new StringStorage();
+        string memory myString = "ipfs://bafkreiden6msn3wycwto42hepsri2ztocoh3e36jl5mawvlem2xqkb7ffu";
+        bytes memory myStringEncoded = abi.encode(myString);
+        bytes memory myStringBytes = bytes(myString);
+        console2.log("how long is string encoded", myStringEncoded.length);
+        console2.log("how long is string pure byte assignment", myStringBytes.length);
+        sStorage.store(myString);
+        require(keccak256(bytes(sStorage.stringInfo(0))) == keccak256(bytes(myString)), "incorrect storage");
+    }    
 }

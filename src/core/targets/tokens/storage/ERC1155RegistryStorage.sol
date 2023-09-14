@@ -10,7 +10,7 @@ contract ERC1155RegistryStorage {
     address public router;
     uint96 public counter;
     /* slot 3? */
-    mapping(uint256 => string) uriInfo;
+    mapping(uint256 => address) public uriInfo;
     /* slot 4? */
     mapping(uint256 => mapping(address => bool)) adminInfo;    
     /* slot 5? */
