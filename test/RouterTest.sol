@@ -6,6 +6,7 @@ import {Test, console2} from "forge-std/Test.sol";
 import {Router} from "../src/core/router/Router.sol";
 
 import {ChannelRegistry} from "../src/core/targets/channels/ChannelRegistry.sol";
+import {ChannelRegistryV2} from "../src/core/targets/channels/ChannelRegistryV2.sol";
 import {IChannelRegistry} from "../src/core/targets/channels/interfaces/IChannelRegistry.sol";
 import {IListing} from "../src/core/targets/channels/interfaces/IListing.sol";
 
@@ -27,6 +28,7 @@ contract RouterTest is Test {
     /* Channel architecture */
     ChannelRegistry channelRegistry;
     ChannelRegistry channelRegistry2;
+    ChannelRegistryV2 v2ChannelRegistry;
     address feeRecipient = address(0x999);
     uint256 fee = 0.0005 ether;
     address admin = address(0x123);
@@ -46,6 +48,7 @@ contract RouterTest is Test {
         router = new Router();
         channelRegistry = new ChannelRegistry(address(router), feeRecipient, fee);
         channelRegistry2 = new ChannelRegistry(address(router), feeRecipient, fee);
+        v2ChannelRegistry = new ChannelRegistryV2(address(router), feeRecipient, fee);
         erc1155Registry = new ERC1155Registry(address(router), feeRecipient, fee);
         mockSalesModule = new MockSalesModule();
         // register channel registry functions on router
@@ -54,6 +57,7 @@ contract RouterTest is Test {
         channelSelectors[1] = IChannelRegistry.addToChannel.selector;
         router.registerTarget(address(channelRegistry), channelSelectors);
         router.registerTarget(address(channelRegistry2), channelSelectors);
+        router.registerTarget(address(v2ChannelRegistry), channelSelectors);
         // register erc1155 registry functions on router     
         bytes4[] memory erc1155Selectors = new bytes4[](1);
         erc1155Selectors[0] = IERC1155Registry.createTokens.selector;
@@ -117,6 +121,23 @@ contract RouterTest is Test {
         // Call router
         router.callTarget(callInputs);
     }
+
+    function test_v2NewChannel() public returns (address) {
+        // setup initialAdmins array for admin init
+        address[] memory initialAdmins = new address[](1);
+        initialAdmins[0] = admin;
+        // Setup channel inputs
+        string memory uri = "ipfs://testing_testing";
+        bytes memory initData = abi.encode(uri, merkleRoot, initialAdmins);
+        // Setup router  inuts
+        Router.CallInputs memory callInputs = Router.CallInputs({
+            target: address(v2ChannelRegistry),
+            selector: IChannelRegistry.newChannel.selector,
+            data: initData
+        });
+        // Call router
+        router.callTarget(callInputs);
+    }    
 
     function test_callTarget() public {
         // Create new channel in channelRegistry
