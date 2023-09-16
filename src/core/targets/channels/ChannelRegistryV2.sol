@@ -46,7 +46,7 @@ contract ChannelRegistryV2 is
         // Cache channel counter
         uint256 counter = channelCounter;
         // Decode data
-        (string memory uri, bytes32 merkleRoot, address[] memory admins) =
+        (string memory channelUri, bytes32 merkleRoot, address[] memory admins) =
             abi.decode(data, (string, bytes32, address[]));
         // Set channel access control
         merkleRootInfo[counter] = merkleRoot;
@@ -55,7 +55,7 @@ contract ChannelRegistryV2 is
             _mint(admins[i], counter, 1, new bytes(0));
         }
         // Emit channel created event
-        emit ChannelCreated(sender, counter, uri, merkleRoot, admins);
+        emit ChannelCreated(sender, counter, channelUri, merkleRoot, admins);
     }
 
     function addToChannel(address sender, bytes memory data) external payable nonReentrant {
@@ -98,9 +98,9 @@ contract ChannelRegistryV2 is
         emit DataRemoved(sender, channelId, broadcastIds);
     }
 
-    function updateUri(address sender, uint256 channelId, string memory uri) external {
+    function updateUri(address sender, uint256 channelId, string memory channelUri) external {
         if (balanceOf[sender][channelId] == 0) revert No_Access();
-        emit UriUpdated(sender, channelId, uri);
+        emit UriUpdated(sender, channelId, channelUri);
     }
 
     function updateMerkleRoot(address sender, uint256 channelId, bytes32 merkleRoot) external {
