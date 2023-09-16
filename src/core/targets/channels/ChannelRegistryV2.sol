@@ -55,6 +55,7 @@ contract ChannelRegistryV2 is
             _mint(admins[i], counter, 1, new bytes(0));
         }
         // Emit channel created event
+        // TODO: can remove admins emissions since will be picked up by 1155 token transfer events
         emit ChannelCreated(sender, counter, channelUri, merkleRoot, admins);
     }
 
@@ -113,9 +114,12 @@ contract ChannelRegistryV2 is
         if (balanceOf[sender][channelId] == 0) revert No_Access();
         if (accounts.length != roles.length) revert Input_Length_Mismatch();
         for (uint256 i; i < accounts.length; ++i) {
-            adminInfo[channelId][accounts[i]] = roles[i];
+            if (roles[i]) {
+                _mint(accounts[i], channelId, 1, new bytes(0));
+            } else {
+                _burn(accounts[i], channelId, 1);
+            }
         }
-        emit AdminsUpdated(sender, channelId, accounts, roles);
     }    
 
     ////////////////////////////////////////////////////////////
