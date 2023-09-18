@@ -27,6 +27,7 @@ interface IChannelRegistry is IListing {
     error Id_Doesnt_Exist();
     error Sender_Not_Router();
     error Input_Length_Mismatch();
+    error Admin_Tokens_Not_Transferable();
 
     ////////////////////////////////////////////////////////////
     // FUNCTIONS

@@ -129,6 +129,37 @@ contract ChannelRegistryV2 is
     function uri(uint256 id) public view override returns (string memory) {
         return "Dont worry about it";
     }    
+
+    ////////////////////////////////////////////////////////////
+    // OVERRIDES
+    ////////////////////////////////////////////////////////////
+
+    /*
+        NOTE:
+        There are no before/after transfer hooks in the solmate 1155 impl.
+        To implement non-transferable token functionality, you can override the
+        `safeTransferFrom` and `safeBatchTransferFrom` functions.
+    */
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes calldata data
+    ) public virtual override {
+        revert Admin_Tokens_Not_Transferable();
+    }
+
+    function safeBatchTransferFrom(
+        address from,
+        address to,
+        uint256[] calldata ids,
+        uint256[] calldata amounts,
+        bytes calldata data
+    ) public virtual override {
+        revert Admin_Tokens_Not_Transferable();
+    }
 }
 
 
