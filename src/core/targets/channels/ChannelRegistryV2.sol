@@ -5,7 +5,7 @@ import "sstore2/SSTORE2.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/security/ReentrancyGuard.sol";
 import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
-import {ERC1155} from "solmate/tokens/ERC1155.sol";
+import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
 
 import {IChannelRegistry} from "./interfaces/IChannelRegistry.sol";
 import {IListing} from "./interfaces/IListing.sol";
@@ -19,6 +19,7 @@ import {FundsReceiver} from "../../../utils/FundsReceiver.sol";
  */
 contract ChannelRegistryV2 is
     ERC1155,
+    ERC1155TokenReceiver,
     ChannelRegistryStorage,
     IChannelRegistry,
     FeeManager,
@@ -51,8 +52,23 @@ contract ChannelRegistryV2 is
         // Set channel access control
         merkleRootInfo[counter] = merkleRoot;
         // Mint admin tokens
-        for (uint256 i; i < admins.length; ++i) {
+        /* NOTE
+            Might want to add an extra mint to the registry addres itself
+            This would make it so that even if all admins have burned their tokens,
+            The channelId can still be picked up by indexing transfer events since
+            at least token id will always exist held by the registry.
+            Adds ~23k gas to update balances for additional receiever.
+
+            _mint(address(this), counter, 1, new bytes(0));
+        */
+        for (uint256 i; i < admins.length; ) {
             _mint(admins[i], counter, 1, new bytes(0));
+
+            // An array can't have a total length
+            // larger than the max uint256 value.
+            unchecked {
+                ++i;
+            }            
         }
         // Emit channel created event
         // TODO: can remove admins emissions since will be picked up by 1155 token transfer events
