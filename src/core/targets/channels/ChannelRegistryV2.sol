@@ -52,7 +52,8 @@ contract ChannelRegistryV2 is
         // Set channel access control
         merkleRootInfo[counter] = merkleRoot;
         // Mint admin tokens
-        /* NOTE
+        /* 
+            NOTE:
             Might want to add an extra mint to the registry addres itself
             This would make it so that even if all admins have burned their tokens,
             The channelId can still be picked up by indexing transfer events since
@@ -63,9 +64,7 @@ contract ChannelRegistryV2 is
         */
         for (uint256 i; i < admins.length; ) {
             _mint(admins[i], counter, 1, new bytes(0));
-
-            // An array can't have a total length
-            // larger than the max uint256 value.
+            // Using unchecked for-loop from solmate
             unchecked {
                 ++i;
             }            
