@@ -25,12 +25,16 @@ contract RouterV2 is ReentrancyGuard, Ownable, FundsReceiver {
         bytes data;
     }
 
-    struct CallInputsWithFlag {
+
+    // slot 1: 7 + 20 + 1 + 4 = 32
+    // slot 2: unstructured bytes = ???
+    struct CallInputsExtended {
+        uint56 value;
         address target;
         uint8 senderFlag;
         bytes4 selector;
         bytes data;
-    }    
+    }
 
     //////////////////////////////////////////////////
     // STORAGE
@@ -49,12 +53,11 @@ contract RouterV2 is ReentrancyGuard, Ownable, FundsReceiver {
     error Unregistered_Target();
     error Unregistered_Selector();
     error Call_Failed(CallInputs inputs);
-    error Call_Failed_Extended(CallInputsWithFlag inputs);
+    error Call_Failed_Extended(CallInputsExtended inputs);
 
     //////////////////////////////////////////////////
     // WRITE FUNCTIONS
     //////////////////////////////////////////////////
-
 
     //////////////////////////////
     // TARGET CALLS
@@ -67,25 +70,23 @@ contract RouterV2 is ReentrancyGuard, Ownable, FundsReceiver {
         if (!success) revert Call_Failed(callInputs);
     }
 
-    function callTargetMulti(CallInputs[] calldata callInputs, uint256[] calldata callValues)
+    function callTargetMulti(CallInputsExtended[] calldata callInputs)
         external
         payable
         nonReentrant
     {
         address sender = msg.sender;
-        if (callInputs.length != callValues.length) revert Input_Length_Mismatch();
         for (uint256 i; i < callInputs.length; ++i) {
-            (bool success,) = callInputs[i].target.call{value: callValues[i]}(
+            (bool success,) = callInputs[i].target.call{value: callInputs[i].value}(
                 abi.encodePacked(callInputs[i].selector, abi.encode(sender, callInputs[i].data))
             );
-            if (!success) revert Call_Failed(callInputs[i]);
+            if (!success) revert Call_Failed_Extended(callInputs[i]);
         }
     }
 
     /* 
     * 
     * NO MSG.SENDER VARIANTS 
-    * NOTE: Not sure if we actually care about these or not
     *
     */
 
@@ -95,46 +96,45 @@ contract RouterV2 is ReentrancyGuard, Ownable, FundsReceiver {
         if (!success) revert Call_Failed(callInputs);
     }
 
-    function callTargetMultiWithoutSender(CallInputs[] calldata callInputs, uint256[] calldata callValues)
+    function callTargetMultiWithoutSender(CallInputsExtended[] calldata callInputs)
         external
         payable
         nonReentrant
-    {
-        if (callInputs.length != callValues.length) revert Input_Length_Mismatch();
+    {        
         for (uint256 i; i < callInputs.length; ++i) {
-            (bool success,) = callInputs[i].target.call{value: callValues[i]}(
+            (bool success,) = callInputs[i].target.call{value: callInputs[i].value}(
                 abi.encodePacked(callInputs[i].selector, callInputs[i].data)
             );
-            if (!success) revert Call_Failed(callInputs[i]);
-        }
+            if (!success) revert Call_Failed_Extended(callInputs[i]);
+        }     
     }
 
     /* 
     * 
-    * "EITHER-OR" MSG.SENDEER VARIANTS 
-    * NOTE: Not sure if we actually care about these or not
+    * "EITHER-OR" MSG.SENDEER VARIANT
     *
-    */
+    */    
 
-    function callTargetMultiWithOrWithoutSender(CallInputsWithFlag[] calldata callInputs, uint256[] calldata callValues)
+    function callTargetMultiWithOrWithoutSender(CallInputsExtended[] calldata callInputs)
         external
         payable
         nonReentrant
     {
-        if (callInputs.length != callValues.length) revert Input_Length_Mismatch();
+        address sender = msg.sender;
         for (uint256 i; i < callInputs.length; ++i) {
             if (callInputs[i].senderFlag == 1) {
-                (bool success,) = callInputs[i].target.call{value: msg.value}(
-                    abi.encodePacked(callInputs[i].selector, abi.encode(msg.sender, callInputs[i].data))
+                // Encode msg.sender and pass into function call data
+                (bool success,) = callInputs[i].target.call{value: callInputs[i].value}(
+                    abi.encodePacked(callInputs[i].selector, abi.encode(sender, callInputs[i].data))
                 );
                 if (!success) revert Call_Failed_Extended(callInputs[i]);
             } else {
-                (bool success,) = callInputs[i].target.call{value: callValues[i]}(
+                // Do not pass msg.sender into function call
+                (bool success,) = callInputs[i].target.call{value: callInputs[i].value}(
                     abi.encodePacked(callInputs[i].selector, callInputs[i].data)
                 );
                 if (!success) revert Call_Failed_Extended(callInputs[i]);
             }
         }
     }
-
 }
