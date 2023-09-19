@@ -2,85 +2,77 @@
 pragma solidity 0.8.20;
 
 import {ReentrancyGuard} from "openzeppelin-contracts/security/ReentrancyGuard.sol";
-import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 import {FundsReceiver} from "../../utils/FundsReceiver.sol";
 
 /**
  * @title RouterV2
  * @author Lifeworld
  */
-contract RouterV2 is ReentrancyGuard, Ownable, FundsReceiver {
+contract RouterV2 is ReentrancyGuard, FundsReceiver {
     //////////////////////////////////////////////////
     // TYPES
     //////////////////////////////////////////////////
 
-    /*
-        NOTE: could potentially add the include msg.sender flag into call Input
-        to simplify DX + save gas on the flag enabled call
+    /* 
+        NOTE:
+        Struct packing not relevant for function inputs
+        because the compilier does not pack these values
+        https://docs.soliditylang.org/en/v0.8.17/internals/layout_in_storage.html#storage-inplace-encoding
     */
 
-    struct CallInputs {
+    struct SingleTargetInputs {
         address target;
         bytes4 selector;
         bytes data;
     }
 
-
-    // slot 1: 7 + 20 + 1 + 4 = 32
-    // slot 2: unstructured bytes = ???
-    struct CallInputsExtended {
-        uint56 value;
+    struct MultiTargetInputs {
         address target;
+        bytes4 selector;        
+        bytes data;
+        uint256 value;
+    }
+
+    struct MultiTargetInputsExtended {
+        address target;
+        bytes4 selector;
+        bytes data;        
+        uint256 value;        
         uint8 senderFlag;
-        bytes4 selector;
-        bytes data;
     }
-
-    //////////////////////////////////////////////////
-    // STORAGE
-    //////////////////////////////////////////////////
-
-    uint256 public constant ROUTER_VERSION = 2;
 
     //////////////////////////////////////////////////
     // ERRORS
     //////////////////////////////////////////////////
 
-    error Target_Already_Registered();
-    error Selector_Already_Registered();
-    error Cannot_Register_ZeroAddress();
-    error Input_Length_Mismatch();
-    error Unregistered_Target();
-    error Unregistered_Selector();
-    error Call_Failed(CallInputs inputs);
-    error Call_Failed_Extended(CallInputsExtended inputs);
+    error Single_Target_Call_Failed(SingleTargetInputs inputs);
+    error Multi_Target_Call_Failed(MultiTargetInputs);
+    error Multi_Target_Call_Extended_Failed(MultiTargetInputsExtended);
 
     //////////////////////////////////////////////////
     // WRITE FUNCTIONS
     //////////////////////////////////////////////////
 
-    //////////////////////////////
-    // TARGET CALLS
-    //////////////////////////////
+    /* 
+    * 
+    * MSG.SENDER VARIANTS 
+    *
+    */
 
-    function callTarget(CallInputs calldata callInputs) external payable nonReentrant {
+    function callTarget(SingleTargetInputs calldata callInputs) external payable nonReentrant {
         (bool success,) = callInputs.target.call{value: msg.value}(
             abi.encodePacked(callInputs.selector, abi.encode(msg.sender, callInputs.data))
         );
-        if (!success) revert Call_Failed(callInputs);
+        if (!success) revert Single_Target_Call_Failed(callInputs);
     }
 
-    function callTargetMulti(CallInputsExtended[] calldata callInputs)
-        external
-        payable
-        nonReentrant
-    {
+    function callTargets(MultiTargetInputs[] calldata callInputs) external payable nonReentrant {
         address sender = msg.sender;
         for (uint256 i; i < callInputs.length; ++i) {
             (bool success,) = callInputs[i].target.call{value: callInputs[i].value}(
                 abi.encodePacked(callInputs[i].selector, abi.encode(sender, callInputs[i].data))
             );
-            if (!success) revert Call_Failed_Extended(callInputs[i]);
+            if (!success) revert Multi_Target_Call_Failed(callInputs[i]);
         }
     }
 
@@ -90,36 +82,28 @@ contract RouterV2 is ReentrancyGuard, Ownable, FundsReceiver {
     *
     */
 
-    function callTargetWithoutSender(CallInputs calldata callInputs) external payable nonReentrant {
+    function callTargetWithoutSender(SingleTargetInputs calldata callInputs) external payable nonReentrant {
         (bool success,) =
             callInputs.target.call{value: msg.value}(abi.encodePacked(callInputs.selector, callInputs.data));
-        if (!success) revert Call_Failed(callInputs);
+        if (!success) revert Single_Target_Call_Failed(callInputs);
     }
 
-    function callTargetMultiWithoutSender(CallInputsExtended[] calldata callInputs)
-        external
-        payable
-        nonReentrant
-    {        
+    function callTargetsWithoutSender(MultiTargetInputs[] calldata callInputs) external payable nonReentrant {
         for (uint256 i; i < callInputs.length; ++i) {
             (bool success,) = callInputs[i].target.call{value: callInputs[i].value}(
                 abi.encodePacked(callInputs[i].selector, callInputs[i].data)
             );
-            if (!success) revert Call_Failed_Extended(callInputs[i]);
-        }     
+            if (!success) revert Multi_Target_Call_Failed(callInputs[i]);
+        }
     }
 
     /* 
     * 
-    * "EITHER-OR" MSG.SENDEER VARIANT
+    * "EITHER-OR" MSG.SENDER VARIANT
     *
-    */    
+    */
 
-    function callTargetMultiWithOrWithoutSender(CallInputsExtended[] calldata callInputs)
-        external
-        payable
-        nonReentrant
-    {
+    function callTargetsWithSenderFlag(MultiTargetInputsExtended[] calldata callInputs) external payable nonReentrant {
         address sender = msg.sender;
         for (uint256 i; i < callInputs.length; ++i) {
             if (callInputs[i].senderFlag == 1) {
@@ -137,4 +121,7 @@ contract RouterV2 is ReentrancyGuard, Ownable, FundsReceiver {
             }
         }
     }
+
+    // TODO: Potentially add withdraw function for incorrectly sent funds
+    // TODO: Potentially add overspend reimbursements
 }
