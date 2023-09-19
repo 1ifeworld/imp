@@ -82,7 +82,7 @@ contract ChannelRegistryV2 is
         update channels flow that the registry can not be an admin itself
         to ensure that only oen token per channel can be held by regsitry
     */
-    function deleteChannel(addres sender, uint256 channelId) external nonReentrant {
+    function deleteChannel(address sender, uint256 channelId) external nonReentrant {
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();       
         // Confirm sender is admin of target channelId
@@ -149,11 +149,11 @@ contract ChannelRegistryV2 is
         emit MerkleRootUpdated(sender, channelId, merkleRoot);
     }
 
-    function updateAdmins(address sender, uint256 channelId, address[] memory accounts, bool[] memory roles) external {
+    function updateAdmins(address sender, uint256 channelId, address[] memory accounts, bool[] memory flags) external {
         if (balanceOf[sender][channelId] == 0) revert No_Access();
-        if (accounts.length != roles.length) revert Input_Length_Mismatch();
+        if (accounts.length != flags.length) revert Input_Length_Mismatch();
         for (uint256 i; i < accounts.length; ++i) {
-            if (roles[i]) {
+            if (flags[i]) {
                 _mint(accounts[i], channelId, 1, new bytes(0));
             } else {
                 _burn(accounts[i], channelId, 1);
