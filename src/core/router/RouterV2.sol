@@ -7,6 +7,14 @@ import {FundsReceiver} from "../../utils/FundsReceiver.sol";
 /**
  * @title RouterV2
  * @author Lifeworld
+ * 
+ * NOTE: 
+ *      1. Currently no way to introduce overspend reimbursements because the router
+ *          does not receive any information from downstream targets
+ *      2. May want to add a withdraw function callable by a set owner, to allow for 
+ *           recover of funds accidentally sent to router, but that could add liability
+ *           to whoever has those permissions
+ *      
  */
 contract RouterV2 is ReentrancyGuard, FundsReceiver {
     //////////////////////////////////////////////////
@@ -121,7 +129,4 @@ contract RouterV2 is ReentrancyGuard, FundsReceiver {
             }
         }
     }
-
-    // TODO: Potentially add withdraw function for incorrectly sent funds
-    // TODO: Potentially add overspend reimbursements
 }
