@@ -7,14 +7,14 @@ import {FundsReceiver} from "../../utils/FundsReceiver.sol";
 /**
  * @title RouterV2
  * @author Lifeworld
- * 
- * NOTE: 
+ *
+ * NOTE:
  *      1. Currently no way to introduce overspend reimbursements because the router
  *          does not receive any information from downstream targets
- *      2. May want to add a withdraw function callable by a set owner, to allow for 
+ *      2. May want to add a withdraw function callable by a set owner, to allow for
  *           recover of funds accidentally sent to router, but that could add liability
  *           to whoever has those permissions
- *      
+ *
  */
 contract RouterV2 is ReentrancyGuard, FundsReceiver {
     //////////////////////////////////////////////////
@@ -36,7 +36,7 @@ contract RouterV2 is ReentrancyGuard, FundsReceiver {
 
     struct MultiTargetInputs {
         address target;
-        bytes4 selector;        
+        bytes4 selector;
         bytes data;
         uint256 value;
     }
@@ -44,8 +44,8 @@ contract RouterV2 is ReentrancyGuard, FundsReceiver {
     struct MultiTargetInputsExtended {
         address target;
         bytes4 selector;
-        bytes data;        
-        uint256 value;        
+        bytes data;
+        uint256 value;
         uint8 senderFlag;
     }
 
