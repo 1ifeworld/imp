@@ -239,8 +239,8 @@ contract RouterTest is Test {
         string memory myString = "ipfs://bafkreiden6msn3wycwto42hepsri2ztocoh3e36jl5mawvlem2xqkb7ffu";
         bytes memory myStringEncoded = abi.encode(myString);
         bytes memory myStringBytes = bytes(myString);
-        console2.log("how long is string encoded", myStringEncoded.length);
-        console2.log("how long is string pure byte assignment", myStringBytes.length);
+        // console2.log("how long is string encoded", myStringEncoded.length);
+        // console2.log("how long is string pure byte assignment", myStringBytes.length);
         sStorage.store(myString);
         require(keccak256(bytes(sStorage.stringInfo(0))) == keccak256(bytes(myString)), "incorrect storage");
     }    

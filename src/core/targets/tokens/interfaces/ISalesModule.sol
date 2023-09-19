@@ -23,4 +23,6 @@ interface ISalesModule {
     //  */
     // function newChannel(address sender, bytes memory data) external;
     function setupToken(address sender, uint256 cachedCounter, bytes memory commands) external;
+
+    function requestCollect(address sender, uint256 tokenId, uint256 quantity) external returns (bool, uint256, address);
 }

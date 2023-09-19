@@ -12,6 +12,7 @@ import {ERC1155RegistryStorage} from "./storage/ERC1155RegistryStorage.sol";
 
 import {FeeManager} from "../../../utils/fees/FeeManager.sol";
 import {FundsReceiver} from "../../../utils/FundsReceiver.sol";
+import {TransferUtils} from "../../../utils/TransferUtils.sol";
 
 /**
  * @title ERC1155Registry
@@ -25,6 +26,8 @@ contract ERC1155Registry is
     ReentrancyGuard,
     Ownable
 {
+    // New events/storage for draft features
+
     ////////////////////////////////////////////////////////////
     // TYPES
     ////////////////////////////////////////////////////////////
@@ -83,6 +86,7 @@ contract ERC1155Registry is
             if (tokenInputs[i].salesModule != address(0)) {
                 saleInfo[cachedCounter] = tokenInputs[i].salesModule;
                 ISalesModule(tokenInputs[i].salesModule).setupToken(sender, cachedCounter, tokenInputs[i].commands);
+                // maybe call this ICollectable instead?
             }
             ids[i] = cachedCounter;
             emit URI(tokenInputs[i].uri, cachedCounter);
@@ -92,6 +96,38 @@ contract ERC1155Registry is
         // Batch mint tokens to sender        
         _batchMint(sender, ids, _singleton(quantity), new bytes(0));
     }
+
+    function collect(address recipient, uint256 tokenId, uint256 quantity) external payable nonReentrant {
+        // Check if sales module has been registered for this token
+        if (saleInfo[tokenId] == address(0)) revert No_Sales_Module_Registered();
+        // Cache msg.sender        
+        address sender = msg.sender;
+        // Get collect rules for given sales module
+        // TODO: make sure not having the recipietny in the requestCollect call isnt necessary
+        //      could replace everything except tokenId (or at least quantity) with a bytes value
+        //      that could make it so the sales logic can process additional commands as well (ex: redemption flows)
+        (bool access, uint256 price, address fundsRecipient) = ISalesModule(saleInfo[tokenId]).requestCollect(sender, tokenId, quantity);   
+        if (!access) revert No_Collect_Access();             
+        if (msg.value != price) revert Incorrect_Msg_Value();
+        // Process mint
+        _mint(recipient, tokenId, quantity, new bytes(0));
+        // Transfer funds to specified tokenId recipient, revert if transfer failed
+        if (!TransferUtils.safeSendETH(
+            fundsRecipient,
+            price, 
+            TransferUtils.FUNDS_SEND_NORMAL_GAS_LIMIT
+        )) {
+            revert ETHTransferFailed(fundsRecipient, price);
+        }                              
+        // Emit Collected event
+        emit Collected(sender, recipient, tokenId, quantity, price);
+        /*
+            NOTE: for later
+            potentially add a check here to refund eth sent for collect if hasnt
+            been fully sent yet. this would protect from ppl sending funds to 
+            collect a tokenId whose recipient address is address(0)
+        */
+    }    
 
     ////////////////////////////////////////////////////////////
     // READ FUNCTIONS
@@ -112,6 +148,23 @@ contract ERC1155Registry is
         }
         return array;
     }
+
+    ////////////////////////////////////////////////////////////
+    // HELPERS
+    ////////////////////////////////////////////////////////////
+
+    // Withdraw ETH accidentally sent to address
+    function withdraw(address recipient) public payable onlyOwner() {
+        uint256 registryEthBalance = address(this).balance;
+        if (!TransferUtils.safeSendETH(
+            recipient, 
+            registryEthBalance, 
+            TransferUtils.FUNDS_SEND_NORMAL_GAS_LIMIT
+        )) {
+            revert ETHTransferFailed(recipient, registryEthBalance);
+        }        
+    }    
+
 }
 
 

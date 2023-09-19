@@ -7,12 +7,17 @@ interface IERC1155Registry {
     ////////////////////////////////////////////////////////////
 
     // event UriUpdated(address sender, uint256 channelId, string uri);
+    event Collected(address sender, address recipient, uint256 tokenId, uint256 quantity, uint256 price);
+    
 
     ////////////////////////////////////////////////////////////
     // ERRORS
     ////////////////////////////////////////////////////////////
 
     error Sender_Not_Router();
+    error No_Sales_Module_Registered();
+    error No_Collect_Access();
+    error ETHTransferFailed(address recipient, uint256 amount);
 
     ////////////////////////////////////////////////////////////
     // FUNCTIONS
