@@ -62,6 +62,8 @@ contract ChannelRegistryV2 is
 
             _mint(address(this), counter, 1, new bytes(0));
         */
+        _mint(address(this), counter, 1, new bytes(0));
+
         for (uint256 i; i < admins.length; ) {
             _mint(admins[i], counter, 1, new bytes(0));
             // Using unchecked for-loop from solmate
@@ -74,13 +76,35 @@ contract ChannelRegistryV2 is
         emit ChannelCreated(sender, counter, channelUri, merkleRoot, admins);
     }
 
+    /*
+        NOTE:
+        Would potentially need to add a guard in channel creation flow + 
+        update channels flow that the registry can not be an admin itself
+        to ensure that only oen token per channel can be held by regsitry
+    */
+    function deleteChannel(addres sender, uint256 channelId) external nonReentrant {
+        // Confirm transaction coming from router
+        if (msg.sender != router) revert Sender_Not_Router();       
+        // Confirm sender is admin of target channelId
+        if (balanceOf[sender][channelId] == 0) revert No_Access();
+        // Burn token held by ChannelRegistry
+        _burn(address(this), channelId, 1);
+    }
+
     function addToChannel(address sender, bytes memory data) external payable nonReentrant {
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();
         // Decode incoming data
         (uint256 channelId, bytes32[] memory merkleProof, Listing[] memory listings) =
             abi.decode(data, (uint256, bytes32[], Listing[]));
-        // Grant access to sender if they are an admin or on merkle tree        
+        // Grant access to sender if they are an admin or on merkle tree    
+        /*
+            Could add an SLOAD here that checks if the registry token is stil held
+            by the channel registry. After that this function would always revert.
+            Could also just add into the backend schema that events in a channel after
+            The channelId token has been burnt should not be processed to save the gas
+            of looking up the registry balance
+        */    
         if (balanceOf[sender][channelId] == 0) {
             if (!MerkleProofLib.verify(merkleProof, merkleRootInfo[channelId], keccak256(abi.encodePacked(sender)))) {
                 revert No_Access();
