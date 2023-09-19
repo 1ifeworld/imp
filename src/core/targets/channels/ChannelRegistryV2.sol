@@ -65,6 +65,11 @@ contract ChannelRegistryV2 is
         _mint(address(this), counter, 1, new bytes(0));
 
         for (uint256 i; i < admins.length; ) {
+            /*
+                NOTE:
+                might need to add a check like this        
+                if (admins[i] = address(this)) revert Registry_Cannot_Be_Admin();
+            */            
             _mint(admins[i], counter, 1, new bytes(0));
             // Using unchecked for-loop from solmate
             unchecked {
@@ -138,17 +143,6 @@ contract ChannelRegistryV2 is
         emit DataRemoved(sender, channelId, broadcastIds);
     }
 
-    function updateUri(address sender, uint256 channelId, string memory channelUri) external {
-        if (balanceOf[sender][channelId] == 0) revert No_Access();
-        emit UriUpdated(sender, channelId, channelUri);
-    }
-
-    function updateMerkleRoot(address sender, uint256 channelId, bytes32 merkleRoot) external {
-        if (balanceOf[sender][channelId] == 0) revert No_Access();
-        merkleRootInfo[channelId] = merkleRoot;
-        emit MerkleRootUpdated(sender, channelId, merkleRoot);
-    }
-
     function updateAdmins(address sender, uint256 channelId, address[] memory accounts, bool[] memory flags) external {
         if (balanceOf[sender][channelId] == 0) revert No_Access();
         if (accounts.length != flags.length) revert Input_Length_Mismatch();
@@ -160,6 +154,17 @@ contract ChannelRegistryV2 is
             }
         }
     }    
+
+    function updateMerkleRoot(address sender, uint256 channelId, bytes32 merkleRoot) external {
+        if (balanceOf[sender][channelId] == 0) revert No_Access();
+        merkleRootInfo[channelId] = merkleRoot;
+        emit MerkleRootUpdated(sender, channelId, merkleRoot);
+    }    
+
+    function updateUri(address sender, uint256 channelId, string memory channelUri) external {
+        if (balanceOf[sender][channelId] == 0) revert No_Access();
+        emit UriUpdated(sender, channelId, channelUri);
+    }
 
     ////////////////////////////////////////////////////////////
     // READ FUNCTIONS
