@@ -132,7 +132,7 @@ contract ChannelRegistryV2 is
         if (msg.sender != router) revert Sender_Not_Router();        
         // Check if channel exists in channel registry
         if (balanceOf[address(this)][channelId] == 0) revert Channel_Deleted(channelId);
-        // Check if channel exists in channel registry
+        // Check if sender is admin of channelId
         if (!adminInfo[channelId][sender]) revert No_Access();        
         // Check that valid inputs submitted
         if (accounts.length != roles.length) revert Input_Length_Mismatch();
@@ -151,7 +151,7 @@ contract ChannelRegistryV2 is
         if (msg.sender != router) revert Sender_Not_Router();        
         // Check if channel exists in channel registry
         if (balanceOf[address(this)][channelId] == 0) revert Channel_Deleted(channelId);
-        // Check if channel exists in channel registry
+        // Check if sender is admin of channelId
         if (!adminInfo[channelId][sender]) revert No_Access();
         merkleRootInfo[channelId] = merkleRoot;
         emit MerkleRootUpdated(sender, channelId, merkleRoot);
@@ -162,7 +162,7 @@ contract ChannelRegistryV2 is
         if (msg.sender != router) revert Sender_Not_Router();        
         // Check if channel exists in channel registry
         if (balanceOf[address(this)][channelId] == 0) revert Channel_Deleted(channelId);
-        // Check if channel exists in channel registry
+        // Check if sender is admin of channelId
         if (!adminInfo[channelId][sender]) revert No_Access();
         emit UriUpdated(sender, channelId, channelUri);
     }
