@@ -3,13 +3,11 @@ pragma solidity 0.8.20;
 
 import "sstore2/SSTORE2.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/security/ReentrancyGuard.sol";
-import {Ownable} from "openzeppelin-contracts/access/Ownable.sol";
 import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
 import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
 
 import {IChannelRegistry} from "./interfaces/IChannelRegistry.sol";
-import {IListing} from "./interfaces/IListing.sol";
-import {ChannelRegistryStorage} from "./storage/ChannelRegistryStorage.sol";
+import {ChannelRegistryStorageV2} from "./storage/ChannelRegistryStorageV2.sol";
 
 import {FeeManager} from "../../../utils/fees/FeeManager.sol";
 import {FundsReceiver} from "../../../utils/FundsReceiver.sol";
@@ -20,13 +18,17 @@ import {FundsReceiver} from "../../../utils/FundsReceiver.sol";
 contract ChannelRegistryV2 is
     ERC1155,
     ERC1155TokenReceiver,
-    ChannelRegistryStorage,
+    ChannelRegistryStorageV2,
     IChannelRegistry,
     FeeManager,
     FundsReceiver,
     ReentrancyGuard,
-    Ownable
 {
+    
+    // Temporary new events/errors
+    error Channel_Deleted(uint256);
+    event DataStoredV2(address sender, uint256 channelId, Listing[] listings);
+    
     ////////////////////////////////////////////////////////////
     // CONSTRUCTOR
     ////////////////////////////////////////////////////////////
@@ -51,118 +53,99 @@ contract ChannelRegistryV2 is
             abi.decode(data, (string, bytes32, address[]));
         // Set channel access control
         merkleRootInfo[counter] = merkleRoot;
-        // Mint admin tokens
-        /* 
-            NOTE:
-            Might want to add an extra mint to the registry addres itself
-            This would make it so that even if all admins have burned their tokens,
-            The channelId can still be picked up by indexing transfer events since
-            at least token id will always exist held by the registry.
-            Adds ~23k gas to update balances for additional receiever.
-
-            _mint(address(this), counter, 1, new bytes(0));
-        */
+        // Mint channelId token to channel registry signifying its creation
+        // NOTE: confirm that this can't be malciiously transferred thru a fallback attack?
+        //      besides that dont believe theres any route that the token could be transferred out
         _mint(address(this), counter, 1, new bytes(0));
-
+        // Set admins for channel
         for (uint256 i; i < admins.length; ) {
-            /*
-                NOTE:
-                might need to add a check like this        
-                if (admins[i] = address(this)) revert Registry_Cannot_Be_Admin();
-            */            
-            _mint(admins[i], counter, 1, new bytes(0));
+            adminInfo[counter][admins[i]] = true;
             // Using unchecked for-loop from solmate
             unchecked {
                 ++i;
             }            
         }
         // Emit channel created event
-        // TODO: can remove admins emissions since will be picked up by 1155 token transfer events
         emit ChannelCreated(sender, counter, channelUri, merkleRoot, admins);
     }
 
-    /*
-        NOTE:
-        Would potentially need to add a guard in channel creation flow + 
-        update channels flow that the registry can not be an admin itself
-        to ensure that only oen token per channel can be held by regsitry
-    */
     function deleteChannel(address sender, uint256 channelId) external nonReentrant {
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();       
         // Confirm sender is admin of target channelId
-        if (balanceOf[sender][channelId] == 0) revert No_Access();
+        if (!adminInfo[channelId][sender]) revert No_Access();
         // Burn token held by ChannelRegistry
         _burn(address(this), channelId, 1);
     }
 
     function addToChannel(address sender, bytes memory data) external payable nonReentrant {
         // Confirm transaction coming from router
-        if (msg.sender != router) revert Sender_Not_Router();
+        if (msg.sender != router) revert Sender_Not_Router();        
         // Decode incoming data
         (uint256 channelId, bytes32[] memory merkleProof, Listing[] memory listings) =
-            abi.decode(data, (uint256, bytes32[], Listing[]));
-        // Grant access to sender if they are an admin or on merkle tree    
-        /*
-            Could add an SLOAD here that checks if the registry token is stil held
-            by the channel registry. After that this function would always revert.
-            Could also just add into the backend schema that events in a channel after
-            The channelId token has been burnt should not be processed to save the gas
-            of looking up the registry balance
-        */    
-        if (balanceOf[sender][channelId] == 0) {
+            abi.decode(data, (uint256, bytes32[], Listing[]));        
+        // Check if channel exists in channel registry
+        // NOTE: this check could potentially be implemented offchain in our data validatio schema
+        //      to save the cost of SLOAD         
+        if (balanceOf[address(this)][channelId] == 0) revert Channel_Deleted(channelId);
+        // Grant access to sender if they are an admin or on merkle tree            
+        if (!adminInfo[channelId][sender]) {
             if (!MerkleProofLib.verify(merkleProof, merkleRootInfo[channelId], keccak256(abi.encodePacked(sender)))) {
                 revert No_Access();
             }
         }
         // Handle system fees for given listings.length of data
-        _handleFees(listings.length);
-        // Update broadcastCounter for given channelId
-        broadcastCounter[channelId] += listings.length;        
+        _handleFees(listings.length);      
         // Emit data for indexing
-        emit DataStored(sender, channelId, broadcastCounter[channelId], listings);
+        emit DataStoredV2(sender, channelId, listings);
     }
 
-    function removeFromChannel(address sender, bytes memory data) external payable nonReentrant {
+    function removeFromChannel(address sender, bytes memory data) external nonReentrant {
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();
         // Decode incoming data
         (uint256 channelId, bytes32[] memory merkleProof, uint256[] memory broadcastIds) =
             abi.decode(data, (uint256, bytes32[], uint256[]));
+        // Check if channel exists in channel registry
+        // NOTE: this check could potentially be implemented offchain in our data validatio schema
+        //      to save the cost of SLOAD         
+        if (balanceOf[address(this)][channelId] == 0) revert Channel_Deleted(channelId);            
         // Grant access to sender if they are an admin or on merkle tree
-        if (balanceOf[sender][channelId] == 0) {
+        if (!adminInfo[channelId][sender]) {
             if (!MerkleProofLib.verify(merkleProof, merkleRootInfo[channelId], keccak256(abi.encodePacked(sender)))) {
                 revert No_Access();
             }
         }
-        // Prevent removal emission of non-existent ids
-        for (uint256 i; i < broadcastIds.length; ++i) {
-            if (broadcastIds[i] > broadcastCounter[channelId]) revert Id_Doesnt_Exist();
-        }
         // Emit data for indexing
+        // NOTE: Integrated backend solution will only process remove events for valid broadcastIds removal calls
+        //      A valid call is one where:
+        //          1. the id lower or equal to the total number of listings broadcasted
+        //          2. The sender of the call is either an admin (universl remove access) or the original broadcaster 
+        //              of the givenId
         emit DataRemoved(sender, channelId, broadcastIds);
-    }
+    }  
 
-    function updateAdmins(address sender, uint256 channelId, address[] memory accounts, bool[] memory flags) external {
-        if (balanceOf[sender][channelId] == 0) revert No_Access();
-        if (accounts.length != flags.length) revert Input_Length_Mismatch();
-        for (uint256 i; i < accounts.length; ++i) {
-            if (flags[i]) {
-                _mint(accounts[i], channelId, 1, new bytes(0));
-            } else {
-                _burn(accounts[i], channelId, 1);
-            }
+    function updateAdmins(address sender, uint256 channelId, address[] memory accounts, bool[] memory roles) external nonReentrant {
+        if (!adminInfo[channelId][sender]) revert No_Access();
+        if (accounts.length != roles.length) revert Input_Length_Mismatch();
+        for (uint256 i; i < accounts.length; ) {
+            adminInfo[channelId][accounts[i]] = roles[i];
+            // Using unchecked for-loop from solmate
+            unchecked {
+                ++i;
+            }                  
         }
+        emit AdminsUpdated(sender, channelId, accounts, roles);
     }    
 
-    function updateMerkleRoot(address sender, uint256 channelId, bytes32 merkleRoot) external {
-        if (balanceOf[sender][channelId] == 0) revert No_Access();
+    function updateMerkleRoot(address sender, uint256 channelId, bytes32 merkleRoot) external nonReentrant {
+        if (!adminInfo[channelId][sender]) revert No_Access();
         merkleRootInfo[channelId] = merkleRoot;
         emit MerkleRootUpdated(sender, channelId, merkleRoot);
     }    
 
-    function updateUri(address sender, uint256 channelId, string memory channelUri) external {
-        if (balanceOf[sender][channelId] == 0) revert No_Access();
+    function updateUri(address sender, uint256 channelId, string memory channelUri) external nonReentrant {
+        if (!adminInfo[channelId][sender]) revert No_Access();
         emit UriUpdated(sender, channelId, channelUri);
     }
 
@@ -173,37 +156,4 @@ contract ChannelRegistryV2 is
     function uri(uint256 id) public view override returns (string memory) {
         return "Dont worry about it";
     }    
-
-    ////////////////////////////////////////////////////////////
-    // OVERRIDES
-    ////////////////////////////////////////////////////////////
-
-    /*
-        NOTE:
-        There are no before/after transfer hooks in the solmate 1155 impl.
-        To implement non-transferable token functionality, you can override the
-        `safeTransferFrom` and `safeBatchTransferFrom` functions.
-    */
-
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes calldata data
-    ) public virtual override {
-        revert Admin_Tokens_Not_Transferable();
-    }
-
-    function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata amounts,
-        bytes calldata data
-    ) public virtual override {
-        revert Admin_Tokens_Not_Transferable();
-    }
 }
-
-

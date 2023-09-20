@@ -7,8 +7,8 @@ contract ChannelRegistryStorageV2 {
     // Contract wide variables
     address public router;
     uint256 public channelCounter;
-    // Broadcast tracking
-    mapping(uint256 => uint256) public broadcastCounter;
     // Channel access control
     mapping(uint256 => bytes32) public merkleRootInfo;
+    // Channel admin info
+    mapping(uint256 => mapping(address => bool)) public adminInfo;
 }

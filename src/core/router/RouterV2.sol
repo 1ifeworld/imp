@@ -119,13 +119,13 @@ contract RouterV2 is ReentrancyGuard, FundsReceiver {
                 (bool success,) = callInputs[i].target.call{value: callInputs[i].value}(
                     abi.encodePacked(callInputs[i].selector, abi.encode(sender, callInputs[i].data))
                 );
-                if (!success) revert Call_Failed_Extended(callInputs[i]);
+                if (!success) revert Multi_Target_Call_Extended_Failed(callInputs[i]);
             } else {
                 // Do not pass msg.sender into function call
                 (bool success,) = callInputs[i].target.call{value: callInputs[i].value}(
                     abi.encodePacked(callInputs[i].selector, callInputs[i].data)
                 );
-                if (!success) revert Call_Failed_Extended(callInputs[i]);
+                if (!success) revert Multi_Target_Call_Extended_Failed(callInputs[i]);
             }
         }
     }

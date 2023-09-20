@@ -139,6 +139,34 @@ contract RouterTest is Test {
         router.callTarget(callInputs);
     }    
 
+    function test_v2CallTarget() public {
+        // Create new channel in channelRegistry
+        createNewChannel(address(v2ChannelRegistry));
+        // setup merkle proof for included address
+        bytes32[] memory proof = new bytes32[](1);
+        proof[0] = merkleProofForAdminAndRoot;
+        // setup listings array
+        IListing.Listing[] memory listings = new IListing.Listing[](1);
+        listings[0] = IListing.Listing({chainId: 10, tokenId: 13, listingAddress: address(0x888), hasTokenId: true});
+        // setup encoded inputs for addToChannel function
+        uint256 channelId = 1;
+        bytes memory encodedData = abi.encode(channelId, proof, listings);
+        // setup fees + distribute eth
+        vm.deal(admin, 1 ether);
+        vm.prank(admin);
+        // Setup router iputs
+        Router.CallInputs memory callInputs = Router.CallInputs({
+            target: address(v2ChannelRegistry),
+            selector: IChannelRegistry.addToChannel.selector,
+            data: encodedData
+        });
+        // Call router - hardcoded value to fee x 1
+        router.callTarget{value: fee}(callInputs);
+        // checks
+        require(admin.balance == 1 ether - fee, "fees not correct");
+        require(feeRecipient.balance == fee, "fees not correcthg");
+    }    
+
     function test_callTarget() public {
         // Create new channel in channelRegistry
         createNewChannel(address(channelRegistry));
