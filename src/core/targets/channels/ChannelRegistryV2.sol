@@ -75,6 +75,8 @@ contract ChannelRegistryV2 is
         // Confirm sender is admin of target channelId
         if (!adminInfo[channelId][sender]) revert No_Access();
         // Burn token held by ChannelRegistry
+        // NOTE: this will revert if channel has already been deleted since the registry
+        // balance will be 0 and cannot burn another token
         _burn(address(this), channelId, 1);
     }
 
@@ -126,7 +128,11 @@ contract ChannelRegistryV2 is
     }  
 
     function updateAdmins(address sender, uint256 channelId, address[] memory accounts, bool[] memory roles) external nonReentrant {
+        // Confirm transaction coming from router
+        if (msg.sender != router) revert Sender_Not_Router();        
+        // Check if channel exists in channel registry
         if (!adminInfo[channelId][sender]) revert No_Access();
+        // Check that valid inputs submitted
         if (accounts.length != roles.length) revert Input_Length_Mismatch();
         for (uint256 i; i < accounts.length; ) {
             adminInfo[channelId][accounts[i]] = roles[i];
@@ -139,12 +145,18 @@ contract ChannelRegistryV2 is
     }    
 
     function updateMerkleRoot(address sender, uint256 channelId, bytes32 merkleRoot) external nonReentrant {
+        // Confirm transaction coming from router
+        if (msg.sender != router) revert Sender_Not_Router();        
+        // Check if channel exists in channel registry
         if (!adminInfo[channelId][sender]) revert No_Access();
         merkleRootInfo[channelId] = merkleRoot;
         emit MerkleRootUpdated(sender, channelId, merkleRoot);
     }    
 
     function updateUri(address sender, uint256 channelId, string memory channelUri) external nonReentrant {
+        // Confirm transaction coming from router
+        if (msg.sender != router) revert Sender_Not_Router();        
+        // Check if channel exists in channel registry
         if (!adminInfo[channelId][sender]) revert No_Access();
         emit UriUpdated(sender, channelId, channelUri);
     }
