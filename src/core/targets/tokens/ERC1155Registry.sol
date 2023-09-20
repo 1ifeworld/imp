@@ -154,7 +154,7 @@ contract ERC1155Registry is
     ////////////////////////////////////////////////////////////
 
     // Withdraw ETH accidentally sent to address
-    function withdraw(address recipient) public payable onlyOwner() {
+    function withdraw(address recipient) public payable onlyOwner {
         uint256 registryEthBalance = address(this).balance;
         if (!TransferUtils.safeSendETH(
             recipient, 
@@ -164,7 +164,6 @@ contract ERC1155Registry is
             revert ETHTransferFailed(recipient, registryEthBalance);
         }        
     }    
-
 }
 
 
