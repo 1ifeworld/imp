@@ -131,7 +131,9 @@ contract ChannelRegistryV2 is
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();        
         // Check if channel exists in channel registry
-        if (!adminInfo[channelId][sender]) revert No_Access();
+        if (balanceOf[address(this)][channelId] == 0) revert Channel_Deleted(channelId);
+        // Check if channel exists in channel registry
+        if (!adminInfo[channelId][sender]) revert No_Access();        
         // Check that valid inputs submitted
         if (accounts.length != roles.length) revert Input_Length_Mismatch();
         for (uint256 i; i < accounts.length; ) {
@@ -148,6 +150,8 @@ contract ChannelRegistryV2 is
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();        
         // Check if channel exists in channel registry
+        if (balanceOf[address(this)][channelId] == 0) revert Channel_Deleted(channelId);
+        // Check if channel exists in channel registry
         if (!adminInfo[channelId][sender]) revert No_Access();
         merkleRootInfo[channelId] = merkleRoot;
         emit MerkleRootUpdated(sender, channelId, merkleRoot);
@@ -156,6 +160,8 @@ contract ChannelRegistryV2 is
     function updateUri(address sender, uint256 channelId, string memory channelUri) external nonReentrant {
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();        
+        // Check if channel exists in channel registry
+        if (balanceOf[address(this)][channelId] == 0) revert Channel_Deleted(channelId);
         // Check if channel exists in channel registry
         if (!adminInfo[channelId][sender]) revert No_Access();
         emit UriUpdated(sender, channelId, channelUri);
