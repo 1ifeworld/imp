@@ -6,7 +6,6 @@ import {Test, console2} from "forge-std/Test.sol";
 import {Router} from "../src/core/router/Router.sol";
 
 import {ChannelRegistry} from "../src/core/targets/channels/ChannelRegistry.sol";
-import {ChannelRegistryV2} from "../src/core/targets/channels/ChannelRegistryV2.sol";
 import {IChannelRegistry} from "../src/core/targets/channels/interfaces/IChannelRegistry.sol";
 import {IListing} from "../src/core/targets/channels/interfaces/IListing.sol";
 
@@ -28,7 +27,6 @@ contract RouterTest is Test {
     /* Channel architecture */
     ChannelRegistry channelRegistry;
     ChannelRegistry channelRegistry2;
-    ChannelRegistryV2 v2ChannelRegistry;
     address feeRecipient = address(0x999);
     uint256 fee = 0.0005 ether;
     address admin = address(0x123);
@@ -48,20 +46,8 @@ contract RouterTest is Test {
         router = new Router();
         channelRegistry = new ChannelRegistry(address(router), feeRecipient, fee);
         channelRegistry2 = new ChannelRegistry(address(router), feeRecipient, fee);
-        v2ChannelRegistry = new ChannelRegistryV2(address(router), feeRecipient, fee);
         erc1155Registry = new ERC1155Registry(address(router), feeRecipient, fee);
-        mockSalesModule = new MockSalesModule();
-        // register channel registry functions on router
-        bytes4[] memory channelSelectors = new bytes4[](2);
-        channelSelectors[0] = IChannelRegistry.newChannel.selector;
-        channelSelectors[1] = IChannelRegistry.addToChannel.selector;
-        router.registerTarget(address(channelRegistry), channelSelectors);
-        router.registerTarget(address(channelRegistry2), channelSelectors);
-        router.registerTarget(address(v2ChannelRegistry), channelSelectors);
-        // register erc1155 registry functions on router     
-        bytes4[] memory erc1155Selectors = new bytes4[](1);
-        erc1155Selectors[0] = IERC1155Registry.createTokens.selector;
-        router.registerTarget(address(erc1155Registry), erc1155Selectors);        
+        mockSalesModule = new MockSalesModule();      
         vm.stopPrank();
     }    
 
@@ -75,7 +61,7 @@ contract RouterTest is Test {
         });
         bytes memory encodedData = abi.encode(admin, tokenInputs);
         // Setup Router inputs
-        Router.CallInputs memory callInputs = Router.CallInputs({
+        Router.SingleTargetInputs memory callInputs = Router.SingleTargetInputs({
             target: address(erc1155Registry),
             selector: IERC1155Registry.createTokens.selector,
             data: encodedData
@@ -93,7 +79,7 @@ contract RouterTest is Test {
         ERC1155Registry.TokenInputs[] memory tokenInputs = generateTokenInputs(numTokens, address(0));
         bytes memory encodedData = abi.encode(admin, tokenInputs);
         // Setup Router inputs
-        Router.CallInputs memory callInputs = Router.CallInputs({
+       Router.SingleTargetInputs memory callInputs = Router.SingleTargetInputs({
             target: address(erc1155Registry),
             selector: IERC1155Registry.createTokens.selector,
             data: encodedData
@@ -113,7 +99,7 @@ contract RouterTest is Test {
         string memory uri = "ipfs://testing_testing";
         bytes memory initData = abi.encode(uri, merkleRoot, initialAdmins);
         // Setup router  inuts
-        Router.CallInputs memory callInputs = Router.CallInputs({
+        Router.SingleTargetInputs memory callInputs = Router.SingleTargetInputs({
             target: address(channelRegistry),
             selector: IChannelRegistry.newChannel.selector,
             data: initData
@@ -122,50 +108,6 @@ contract RouterTest is Test {
         router.callTarget(callInputs);
     }
 
-    function test_v2NewChannel() public returns (address) {
-        // setup initialAdmins array for admin init
-        address[] memory initialAdmins = new address[](1);
-        initialAdmins[0] = admin;
-        // Setup channel inputs
-        string memory uri = "ipfs://testing_testing";
-        bytes memory initData = abi.encode(uri, merkleRoot, initialAdmins);
-        // Setup router  inuts
-        Router.CallInputs memory callInputs = Router.CallInputs({
-            target: address(v2ChannelRegistry),
-            selector: IChannelRegistry.newChannel.selector,
-            data: initData
-        });
-        // Call router
-        router.callTarget(callInputs);
-    }    
-
-    function test_v2CallTarget() public {
-        // Create new channel in channelRegistry
-        createNewChannel(address(v2ChannelRegistry));
-        // setup merkle proof for included address
-        bytes32[] memory proof = new bytes32[](1);
-        proof[0] = merkleProofForAdminAndRoot;
-        // setup listings array
-        IListing.Listing[] memory listings = new IListing.Listing[](1);
-        listings[0] = IListing.Listing({chainId: 10, tokenId: 13, listingAddress: address(0x888), hasTokenId: true});
-        // setup encoded inputs for addToChannel function
-        uint256 channelId = 1;
-        bytes memory encodedData = abi.encode(channelId, proof, listings);
-        // setup fees + distribute eth
-        vm.deal(admin, 1 ether);
-        vm.prank(admin);
-        // Setup router iputs
-        Router.CallInputs memory callInputs = Router.CallInputs({
-            target: address(v2ChannelRegistry),
-            selector: IChannelRegistry.addToChannel.selector,
-            data: encodedData
-        });
-        // Call router - hardcoded value to fee x 1
-        router.callTarget{value: fee}(callInputs);
-        // checks
-        require(admin.balance == 1 ether - fee, "fees not correct");
-        require(feeRecipient.balance == fee, "fees not correcthg");
-    }    
 
     function test_callTarget() public {
         // Create new channel in channelRegistry
@@ -183,7 +125,7 @@ contract RouterTest is Test {
         vm.deal(admin, 1 ether);
         vm.prank(admin);
         // Setup router iputs
-        Router.CallInputs memory callInputs = Router.CallInputs({
+        Router.SingleTargetInputs memory callInputs = Router.SingleTargetInputs({
             target: address(channelRegistry),
             selector: IChannelRegistry.addToChannel.selector,
             data: encodedData
@@ -212,23 +154,21 @@ contract RouterTest is Test {
         vm.deal(admin, 1 ether);
         vm.startPrank(admin);
         // Setup router iputs
-        Router.CallInputs[] memory callInputsArray = new Router.CallInputs[](2);
-        callInputsArray[0] = Router.CallInputs({
+        Router.MultiTargetInputs[] memory callInputsArray = new Router.MultiTargetInputs[](2);
+        callInputsArray[0] = Router.MultiTargetInputs({
             target: address(channelRegistry),
             selector: IChannelRegistry.addToChannel.selector,
-            data: encodedData
+            data: encodedData,
+            value: 0.0005 ether
         });
-        callInputsArray[1] = Router.CallInputs({
+        callInputsArray[1] = Router.MultiTargetInputs({
             target: address(channelRegistry2),
             selector: IChannelRegistry.addToChannel.selector,
-            data: encodedData
+            data: encodedData,
+            value: 0.0005 ether            
         });
-        // Setup router values for multi target
-        uint256[] memory values = new uint256[](2);
-        values[0] = 0.0005 ether;
-        values[1] = 0.0005 ether;
         // Call router
-        router.callTargetMulti{value: (fee * 2)}(callInputsArray, values);
+        router.callTargets{value: (fee * 2)}(callInputsArray);
         // checks
         require(admin.balance == 1 ether - (fee * 2), "fees not correct");
         require(feeRecipient.balance == (fee * 2), "fees not correcthg");
@@ -244,8 +184,8 @@ contract RouterTest is Test {
         string memory uri = "ipfs://testing_testing";
         bytes memory initData = abi.encode(uri, merkleRoot, initialAdmins);
         // Setup router  inuts
-        Router.CallInputs memory callInputs =
-            Router.CallInputs({target: target, selector: IChannelRegistry.newChannel.selector, data: initData});
+        Router.SingleTargetInputs memory callInputs =
+            Router.SingleTargetInputs({target: target, selector: IChannelRegistry.newChannel.selector, data: initData});
         // Call router
         router.callTarget(callInputs);
     }

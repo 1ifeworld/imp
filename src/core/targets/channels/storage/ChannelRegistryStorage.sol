@@ -2,14 +2,14 @@
 pragma solidity 0.8.20;
 
 contract ChannelRegistryStorage {
-    // Constants
+    /// @notice 
     uint256 public constant CHANNEL_REGISTRY_VERSION = 1;
-    // Contract wide variables
-    address public router;
+    /// @notice 
     uint256 public channelCounter;
-    // Broadcast tracking
-    mapping(uint256 => uint256) public broadcastCounter;
-    // Channel access control
+    /// @notice 
+    address public router;    
+    /// @notice Non-admin access control basis for channels
     mapping(uint256 => bytes32) public merkleRootInfo;
+    /// @notice Admin accessc control basis for channels
     mapping(uint256 => mapping(address => bool)) public adminInfo;
 }

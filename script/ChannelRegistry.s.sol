@@ -3,7 +3,6 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 
-
 import {Router} from "../src/core/router/Router.sol";
 import {ChannelRegistry} from "../src/core/targets/channels/ChannelRegistry.sol";
 import {IChannelRegistry} from "../src/core/targets/channels/interfaces/IChannelRegistry.sol";
@@ -37,13 +36,6 @@ contract DeployCore is Script {
         channelRegistry = new ChannelRegistry(address(router), feeRecipient, fee);
         channelRegistry2 = new ChannelRegistry(address(router), feeRecipient, fee);
         
-        // register transmitters + selecotrs on router
-        bytes4[] memory selectors = new bytes4[](2);
-        selectors[0] = IChannelRegistry.newChannel.selector;
-        selectors[1] = IChannelRegistry.addToChannel.selector;
-        router.registerTarget(address(channelRegistry), selectors);
-        router.registerTarget(address(channelRegistry2), selectors);
-
         // Creates one channel on two different channel registries through router
         createNewChannel(address(channelRegistry));
         createNewChannel(address(channelRegistry2));     
@@ -63,8 +55,8 @@ contract DeployCore is Script {
         string memory uri = "ipfs://testing_testing";
         bytes memory initData = abi.encode(uri, merkleRoot, initialAdmins);
         // Setup router  inuts
-        Router.CallInputs memory callInputs =
-            Router.CallInputs({target: target, selector: IChannelRegistry.newChannel.selector, data: initData});
+        Router.SingleTargetInputs memory callInputs =
+            Router.SingleTargetInputs({target: target, selector: IChannelRegistry.newChannel.selector, data: initData});
         // Call router
         router.callTarget(callInputs);
     }
@@ -79,7 +71,7 @@ contract DeployCore is Script {
         uint256 channelId = 1;
         bytes memory encodedData = abi.encode(channelId, emptyProof, listings);        
         // Setup router iputs
-        Router.CallInputs memory callInputs = Router.CallInputs({
+        Router.SingleTargetInputs memory callInputs = Router.SingleTargetInputs({
             target: address(target),
             selector: IChannelRegistry.addToChannel.selector,
             data: encodedData
@@ -98,23 +90,21 @@ contract DeployCore is Script {
         uint256 channelId = 1;
         bytes memory encodedData = abi.encode(channelId, emptyProof, listings);                   
         // Setup router iputs
-        Router.CallInputs[] memory callInputsArray = new Router.CallInputs[](2);
-        callInputsArray[0] = Router.CallInputs({
+        Router.MultiTargetInputs[] memory callInputsArray = new Router.MultiTargetInputs[](2);
+        callInputsArray[0] = Router.MultiTargetInputs({
             target: address(target1),
             selector: IChannelRegistry.addToChannel.selector,
-            data: encodedData
+            data: encodedData,
+            value: fee
         });
-        callInputsArray[1] = Router.CallInputs({
+        callInputsArray[1] = Router.MultiTargetInputs({
             target: address(target2),
             selector: IChannelRegistry.addToChannel.selector,
-            data: encodedData
+            data: encodedData,
+            value: fee            
         });
-        // Setup router values for multi target
-        uint256[] memory values = new uint256[](2);
-        values[0] = fee; 
-        values[1] = fee; 
         // Call router   
-        router.callTargetMulti{value: (fee * 2)}(callInputsArray, values);        
+        router.callTargets{value: (fee * 2)}(callInputsArray);        
     }        
 }
 
