@@ -42,6 +42,13 @@ contract ChannelRegistryV2 is
     ////////////////////////////////////////////////////////////
 
     function newChannel(address sender, bytes memory data) external nonReentrant {
+        /* 
+            NOTE:
+            could potentialyl get rid of this router origin check because the sender
+            we are passing in isnt critical to functionality of this function
+            it is useful from an activity standpoint tho. the reason sender isnt
+            used is because admins are assigned thru data being passed into function
+        */ 
         // Confirm transaction coming from router
         if (msg.sender != router) revert Sender_Not_Router();
         // Increment channel counter
