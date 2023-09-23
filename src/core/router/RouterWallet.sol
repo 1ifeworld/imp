@@ -101,7 +101,6 @@ contract RouterWallet is
                 validation of signature authenticity happens during `validateUserOp` required
                 by compatible wallets to have as defined in IAccount
         */
-        // address target = userOpCalldata[0:20];
         (address target) = abi.decode(userOpCalldata[0:20], (address));
         (uint256 value) = abi.decode(userOpCalldata[20:52], (uint256));
         (address originalSigner) = abi.decode(userOpCalldata[52:72], (address));
