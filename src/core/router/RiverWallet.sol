@@ -4,17 +4,18 @@ pragma solidity 0.8.20;
 import "./aa/BaseAccount.sol";
 import "./utils/TokenCallbackHandler.sol";
 import {FundsReceiver} from "../../utils/FundsReceiver.sol";
+
 import {ReentrancyGuard} from "openzeppelin-contracts/security/ReentrancyGuard.sol";
 import "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 import "openzeppelin-contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts/proxy/utils/UUPSUpgradeable.sol";
 
 /**
- * @title RouterWallet
+ * @title RiverWallet
  * @author Lifeworld
  *
  */
-contract RouterWallet is
+contract RiverWallet is
     BaseAccount,
     TokenCallbackHandler,
     FundsReceiver,
@@ -34,6 +35,13 @@ contract RouterWallet is
         bytes data;
     }
 
+    struct MultiTargetInputs {
+        address target;
+        bytes4 selector;
+        bytes data;
+        uint256 value;
+    }    
+
     //////////////////////////////////////////////////
     // EVENTS
     //////////////////////////////////////////////////
@@ -45,9 +53,12 @@ contract RouterWallet is
     //////////////////////////////////////////////////
 
     error Single_Target_Call_Failed(SingleTargetInputs inputs);
+    error Multi_Target_Call_Failed(MultiTargetInputs inputs);
+    error Simple_Eth_Transfer_Failed();
     error Call_Via_EntryPoint_Failed();
     error Sender_Not_EntryPoint();
     error Insufficient_Balance();
+    error Only_Owner();
 
     //////////////////////////////////////////////////
     // STORAGE
@@ -62,7 +73,8 @@ contract RouterWallet is
     // CONSTRUCTOR
     //////////////////////////////////////////////////
 
-    constructor(IEntryPoint anEntryPoint) {
+    constructor(address initialOwner, IEntryPoint anEntryPoint) {
+        owner = initialOwner;
         _entryPoint = anEntryPoint;
         _disableInitializers();
     }
@@ -86,11 +98,37 @@ contract RouterWallet is
     }
 
     //////////////////////////////////////////////////
-    // FUNCTIONS
+    // NON-AA USAGE FUNCTIONS
     //////////////////////////////////////////////////
 
+    function transferToTarget(address target, uint256 value) external payable nonReentrant {
+        if (msg.sender != owner) revert Only_Owner();
+        (bool success,) = target.call{value: value}(new bytes(0));
+        if (!success) revert Simple_Eth_Transfer_Failed();
+    }
 
-    function executeViaEntryPoint(bytes calldata userOpCalldata) external payable nonReentrant {
+    function callTarget(SingleTargetInputs calldata callInputs) external payable nonReentrant {
+        (bool success,) = callInputs.target.call{value: msg.value}(
+            abi.encodePacked(callInputs.selector, abi.encode(msg.sender, callInputs.data))
+        );
+        if (!success) revert Single_Target_Call_Failed(callInputs);
+    }
+
+    function callTargets(MultiTargetInputs[] calldata callInputs) external payable nonReentrant {
+        address sender = msg.sender;
+        for (uint256 i; i < callInputs.length; ++i) {
+            (bool success,) = callInputs[i].target.call{value: callInputs[i].value}(
+                abi.encodePacked(callInputs[i].selector, abi.encode(sender, callInputs[i].data))
+            );
+            if (!success) revert Multi_Target_Call_Failed(callInputs[i]);
+        }
+    }        
+
+    //////////////////////////////////////////////////
+    // AA USAGE FUNCTIONS
+    //////////////////////////////////////////////////
+
+    function callTargetViaEntryPoint(bytes calldata userOpCalldata) external payable nonReentrant {
         if (msg.sender != address(_entryPoint)) revert Sender_Not_EntryPoint();
         /*
             userOpCalldata breakdown:
@@ -170,17 +208,5 @@ contract RouterWallet is
     // function withdrawDepositTo(address payable withdrawAddress, uint256 amount) public {
     //     if (amount > entryPointDepositMirror[msg.sender]) revert Withdrawal_Exceeds_Funds();
     //     entryPoint().withdrawTo(withdrawAddress, amount);
-    // }
-
-    // //
-    // function callTarget(SingleTargetInputs calldata callInputs) external payable nonReentrant {
-    //     (bool success,) = callInputs.target.call{value: msg.value}(
-    //         abi.encodePacked(callInputs.selector, abi.encode(msg.sender, callInputs.data))
-    //     );
-    //     if (!success) revert Single_Target_Call_Failed(callInputs);
-    // }
-
-    // function executeViaEntryPoint() external payable {
-    //     if (msg.sender != address(entryPoint())) revert Sender_Not_EntryPoint();
     // }
 }
