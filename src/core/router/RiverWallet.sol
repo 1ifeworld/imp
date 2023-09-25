@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
-
+import {console2} from "forge-std/Test.sol";
 import "./aa/BaseAccount.sol";
 import "./utils/TokenCallbackHandler.sol";
 import {FundsReceiver} from "../../utils/FundsReceiver.sol";
@@ -98,14 +98,20 @@ contract RiverWallet is
     }
 
     //////////////////////////////////////////////////
-    // NON-AA USAGE FUNCTIONS
+    // ADMIN FUNCTIONS
     //////////////////////////////////////////////////
 
+    // NOTE: this function is in here for testing purposes. 
+    //       is NOT an actual feature
     function transferToTarget(address target, uint256 value) external payable nonReentrant {
         if (msg.sender != owner) revert Only_Owner();
         (bool success,) = target.call{value: value}(new bytes(0));
         if (!success) revert Simple_Eth_Transfer_Failed();
     }
+
+    //////////////////////////////////////////////////
+    // NON-AA USAGE FUNCTIONS
+    //////////////////////////////////////////////////
 
     function callTarget(SingleTargetInputs calldata callInputs) external payable nonReentrant {
         (bool success,) = callInputs.target.call{value: msg.value}(
@@ -162,7 +168,8 @@ contract RiverWallet is
         // Recover address that signed transaction to be submitted through River wallet
         bytes32 hash = userOpHash.toEthSignedMessageHash();
         address originSigner = hash.recover(userOp.signature);
-        (address passThroughSigner) = abi.decode(userOp.callData[4:24], (address));
+        // NOTE: this call data slice below is probably incorrect still
+        (address passThroughSigner) = abi.decode(userOp.callData[0:32], (address));
         // Signal op failutre if the signer being passed into calldata isnt the signer of the userOp
         if (originSigner != passThroughSigner) return SIG_VALIDATION_FAILED;
         return 0;       

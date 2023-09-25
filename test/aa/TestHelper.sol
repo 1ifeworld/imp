@@ -10,7 +10,7 @@ import {RiverWallet} from "../../src/core/router/RiverWallet.sol";
 contract TestHelper is Test {
     Account internal accountOwner;
     EntryPoint internal entryPoint;
-    // RiverWallet internal account; // this should become account proxy
+    // RiverWallet internal accountProxy; // this should become account proxy
     RiverWallet internal accountImpl;
     // SimpleAccountFactory internal simpleAccountFactory;
 
