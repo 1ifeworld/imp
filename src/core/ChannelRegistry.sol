@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import "sstore2/SSTORE2.sol";
-import {ReentrancyGuard} from "openzeppelin-contracts/security/ReentrancyGuard.sol";
-import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
 import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
 
 /*
@@ -11,7 +8,7 @@ import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
 
     With this structure, it seems appropriate to get rid of transaction level fees
     and incorporate some type of recurring/subscription model fee that users pay
-    for write access. if they've paid fee in X time period, the indexer will
+    for the indexing of their data. if they've paid fee in X time period, the indexer will
     index their transactions. importantly, the fee does not affect prior data
     broadcasting. all prior valid data will be retreivable via river indexer regardless
     of the data originator's fee status
