@@ -39,6 +39,8 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
 
     event NewChannel(address sender, uint256 id, string uri, bytes32 merkleRoot, address[] admins);
     event ChannelAction(address sender, uint256 id, uint256 action, bytes actionData);
+    event ChannelAction_2(address sender, uint256 id, bytes action);
+    event ChannelAction_3(address sender, bytes action);
 
     ////////////////////////////////////////////////////////////
     // ERRORS
@@ -78,6 +80,7 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
         (string memory channelUri, bytes32 merkleRoot, address[] memory admins) =
             abi.decode(data, (string, bytes32, address[]));
         // Mint channelId token to registry
+        // NOTE: this costs as implemented roughtly ~27k gas
         _mint(address(this), channelCounter, 1, new bytes(0));        
         // Emit for indexing
         emit NewChannel(msg.sender, channelCounter, channelUri, merkleRoot, admins);
@@ -94,6 +97,42 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
             actionData
         );
     }    
+
+    function writeToChannel_2(bytes memory data) external payable {
+        // Decode incoming data
+        (uint256 channelId, bytes memory action) = abi.decode(data, (uint256, bytes));
+        // Emit for indexing
+        emit ChannelAction_2(
+            msg.sender,
+            channelId,
+            action
+        );
+    }     
+
+    function writeToChannel_3(bytes calldata data) external payable {
+        // Emit for indexing
+        emit ChannelAction_3(
+            msg.sender,
+            data
+        );
+    }             
+
+    /*
+        NOTE: 
+
+            steps:
+            - channel action gets picked up
+            - (uint256 channelId, uint256 action, bytes memory actionData) = abi.decode(data, (uint256, uint256, bytes));
+            - filter begins
+                - has sender paid X fee in Y time
+                - does channel id exist?
+                - does action exist?
+                - does actionData fit scehma for target action?
+                - does sender have access control to process channelId + action + actionData
+
+
+    */
+
 
     /*
         NOTE:
@@ -115,7 +154,6 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
             actionData
         );
     }        
-
 
     /*
         [DRAFT] ACTION SCHEMA:
