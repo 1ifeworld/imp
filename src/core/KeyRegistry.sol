@@ -21,6 +21,7 @@ pragma solidity 0.8.20;
     experiment with moving literally all of this to event based system
         pretty sure that actually nothing needs to be stored in contract storage
         and that events work for everything 
+        ex: Indexer will only index transactions that have been called by trusted caller
 */
 
 /**
