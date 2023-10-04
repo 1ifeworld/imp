@@ -7,41 +7,38 @@ import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
  * @title ChannelRegistry
  */
 contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
-    ////////////////////////////////////////////////////////////
-    // TYPES
-    ////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////
-    // EVENTS
-    ////////////////////////////////////////////////////////////
 
     event NewChannel(address sender, uint256 id, bytes data);
-    event ChannelAction(address sender, bytes actionData);
-
-    ////////////////////////////////////////////////////////////
-    // ERRORS
-    ////////////////////////////////////////////////////////////    
-
-    ////////////////////////////////////////////////////////////
-    // STORAGE
-    ////////////////////////////////////////////////////////////
+    event ChannelAction(address sender, bytes action);
 
     uint256 public channelCounter;
 
-    ////////////////////////////////////////////////////////////
-    // CONSTRUCTOR
-    ////////////////////////////////////////////////////////////
+    function newChannel(bytes memory data) external returns (uint256 channelId) {
+        /* Safety: idCounter won't realistically overflow. */
+        unchecked {        
+            /* Incrementing before assignment ensures that first tokenId is 1. */
+            channelId = ++channelCounter;
+        }           
+        // Mint channelId token to registry
+        _mint(address(this), channelId, 1, new bytes(0));
+        // Emit for indexing
+        emit NewChannel(msg.sender, channelId, data);        
+    }
 
-    ////////////////////////////////////////////////////////////
-    // WRITE FUNCTIONS
-    ////////////////////////////////////////////////////////////
+    function writeToChannel(bytes memory data) external {
+        emit ChannelAction(msg.sender, data);
+    }    
+
+    /// @dev: Required for compatibility with inherited ERC1155 standard
+    function uri(uint256 /* id */) public pure override returns (string memory) {
+        return "NOTE: Uris not supported in this ERC1155 implementation";
+    }
 
     /*
         DEFINING OFFCHAIN SCHEMA FOR CHANNEL CREATION
 
         struct ChannelInitData {
             uint256 rId,
-            bytes rIdOwnershipProof,
             uint256 channelAccessScheme,
             bytes channelAccessData,
             string channelUri
@@ -64,66 +61,17 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
 
 
         checking for the relationship between rId and Signer. what does that produce? is it a hash?  
+                // Decode incoming data
+        (uint256 channelId, uint256 action, bytes memory actionData) = abi.decode(data, (uint256, uint256, bytes));
     */
-
-    function newChannel(bytes memory data) external {
-        // Increment and assign channelCounter
-        uint256 id = ++channelCounter;
-        // Mint channelId token to registry
-        _mint(address(this), id, 1, new bytes(0));
-        // Emit for indexing
-        emit NewChannel(msg.sender, id, data);        
-    }
 
     /*
         NOTE: 
         The registry will maintain a balance of 1 for every channelId
         token created. This will allow us to addListings to channels
         that target the address of the registry + tokenId of the channel
-    */
-    function newChannel(bytes memory data) external {
-        // Increment channel counter
-        ++channelCounter;
-        // Decode data
-        (string memory channelUri, bytes32 merkleRoot, address[] memory admins) =
-            abi.decode(data, (string, bytes32, address[]));
-        // Mint channelId token to registry
-        // NOTE: this costs as implemented roughtly ~27k gas
-        _mint(address(this), channelCounter, 1, new bytes(0));        
-        // Emit for indexing
-        emit NewChannel(msg.sender, channelCounter, channelUri, merkleRoot, admins);
-    }
-
-    function writeToChannel(bytes memory data) external payable {
-        // Decode incoming data
-        (uint256 channelId, uint256 action, bytes memory actionData) = abi.decode(data, (uint256, uint256, bytes));
-        // Emit for indexing
-        emit ChannelAction(
-            msg.sender,
-            channelId,
-            action,
-            actionData
-        );
-    }    
-
-    function writeToChannel_2(bytes memory data) external payable {
-        // Decode incoming data
-        (uint256 channelId, bytes memory action) = abi.decode(data, (uint256, bytes));
-        // Emit for indexing
-        emit ChannelAction_2(
-            msg.sender,
-            channelId,
-            action
-        );
-    }     
-
-    function writeToChannel_3(bytes calldata data) external payable {
-        // Emit for indexing
-        emit ChannelAction(
-            msg.sender,
-            data
-        );
-    }             
+    */    
+       
 
     /*
         NOTE: 
@@ -140,34 +88,6 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
 
 
     */
-
-
-    /*
-        NOTE:
-        This version of the function lets us also provide a smart contract wallet to abstract
-        user txns through IF they happen to not have a smart wallet themselves.
-        A similar function wille exist on the 1155 registry, which is what will let us bundle
-        createToken + writeToChannel actions together in case of user not already having a 
-        smart contract wallet to facilitate txn bundling
-
-
-        Newer NOTE:
-        we might not need the router version because thers no need for bundle txns
-        if River wallet in server is processing txns on behalf of users who have delegated?
-        can just call multiple txns in a row?
-    */
-    function writeToChannelViaRouter(address sender, bytes memory data) external {
-        if (msg.sender != router) revert Sender_Not_Router();
-        // Decode incoming data
-        (uint256 channelId, uint256 action, bytes memory actionData) = abi.decode(data, (uint256, uint256, bytes));
-        // Emit for indexing
-        emit ChannelAction(
-            sender,
-            channelId,
-            action,
-            actionData
-        );
-    }        
 
     /*
         [DRAFT] ACTION SCHEMA:
@@ -234,13 +154,4 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
                     - listingId can be sorted
                         - id exists                                                 
     */
-
-    ////////////////////////////////////////////////////////////
-    // READ FUNCTIONS
-    ////////////////////////////////////////////////////////////
-
-    // NOTE: needed for compatibility with inherited ERC1155 standard
-    function uri(uint256 /* id */) public pure override returns (string memory) {
-        return "NOTE: Token URIs not supported in this contract";
-    }
 }
