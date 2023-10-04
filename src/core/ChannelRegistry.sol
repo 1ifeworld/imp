@@ -3,21 +3,6 @@ pragma solidity 0.8.20;
 
 import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
 
-/*
-    NOTE: on fees
-
-    With this structure, it seems appropriate to get rid of transaction level fees
-    and incorporate some type of recurring/subscription model fee that users pay
-    for the indexing of their data. if they've paid fee in X time period, the indexer will
-    index their transactions. importantly, the fee does not affect prior data
-    broadcasting. all prior valid data will be retreivable via river indexer regardless
-    of the data originator's fee status
-
-    Other fees that could live at protocol level could be things like:
-    - fee for maintaing live RSS feeds for specific channels
-        - River engine will maintain RSS feeds for channels that have paid this fee
-*/
-
 /**
  * @title ChannelRegistry
  */
@@ -26,46 +11,69 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
     // TYPES
     ////////////////////////////////////////////////////////////
 
-    struct Listing {
-        uint128 chainId;
-        uint128 tokenId;
-        address pointer;
-        uint8 hasTokenId;
-    }
-
     ////////////////////////////////////////////////////////////
     // EVENTS
     ////////////////////////////////////////////////////////////
 
-    event NewChannel(address sender, uint256 id, string uri, bytes32 merkleRoot, address[] admins);
-    event ChannelAction(address sender, uint256 id, uint256 action, bytes actionData);
-    event ChannelAction_2(address sender, uint256 id, bytes action);
-    event ChannelAction_3(address sender, bytes action);
+    event NewChannel(address sender, uint256 id, bytes data);
+    event ChannelAction(address sender, bytes actionData);
 
     ////////////////////////////////////////////////////////////
     // ERRORS
     ////////////////////////////////////////////////////////////    
 
-    error Sender_Not_Router();    
-
     ////////////////////////////////////////////////////////////
     // STORAGE
     ////////////////////////////////////////////////////////////
 
-    address public immutable router;
     uint256 public channelCounter;
 
     ////////////////////////////////////////////////////////////
     // CONSTRUCTOR
     ////////////////////////////////////////////////////////////
 
-    constructor(address _router) {
-        router = _router;
-    }
-
     ////////////////////////////////////////////////////////////
     // WRITE FUNCTIONS
     ////////////////////////////////////////////////////////////
+
+    /*
+        DEFINING OFFCHAIN SCHEMA FOR CHANNEL CREATION
+
+        struct ChannelInitData {
+            uint256 rId,
+            bytes rIdOwnershipProof,
+            uint256 channelAccessScheme,
+            bytes channelAccessData,
+            string channelUri
+        }
+
+        struct ChannelAccessScheme {
+            0: abi.encode(address[] admins, bytes32 merkleRoot);
+        }
+
+        how logic works
+        - backend picks up NewChannel event
+        - backend decodes the data into ChannelInitData
+        - ChannelInitData must:
+            - include a valid channelAccessScheme
+            - include channelAccessData that matches designated channelAccessScheme
+            - include a valid channelUri
+        - if all the above is true, AND the msg.sender has a valid rId,
+
+
+
+
+        checking for the relationship between rId and Signer. what does that produce? is it a hash?  
+    */
+
+    function newChannel(bytes memory data) external {
+        // Increment and assign channelCounter
+        uint256 id = ++channelCounter;
+        // Mint channelId token to registry
+        _mint(address(this), id, 1, new bytes(0));
+        // Emit for indexing
+        emit NewChannel(msg.sender, id, data);        
+    }
 
     /*
         NOTE: 
@@ -111,7 +119,7 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
 
     function writeToChannel_3(bytes calldata data) external payable {
         // Emit for indexing
-        emit ChannelAction_3(
+        emit ChannelAction(
             msg.sender,
             data
         );
