@@ -36,8 +36,8 @@ A breakdown of smart contract sytem design
         - channelId (uint256) to target
         - actionId (uint256) to target
         - data (bytes) to process
-    - Their are no contract-level blocks on the creation of new channels or transmission of
-        channel 
+    - Their are no contract-level blocks on the creation of new channels OR the emission of channel actions. 
+        All access control + indexing logic occurs off-chain as designated in the Delta implementation
 - Media
     - The media registry is structured similarly to the id + channel registry but also inherits
         an ERC1155 implementation to enable tokenization
