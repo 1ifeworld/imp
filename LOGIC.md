@@ -6,7 +6,7 @@ A breakdown of smart contract sytem design
     - mediaRegistry.sol
 - Ids
     - All activity on river is attributed to rids (River Ids)
-    - Rids are created through the idRegistry. They are numerical based for our use case are ~ infinite
+    - Rids are created through the idRegistry. They are numerical based, and for our use case are roughly unlimited
     - Rids are associated with a given owner address, and an address can only be the onwer of one id at a time
     - Upon registration, users can also assign a backup address that can be used to recover an rid in case of
         a vulnberability in their primary owner address
