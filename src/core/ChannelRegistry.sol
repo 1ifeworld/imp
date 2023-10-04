@@ -6,8 +6,7 @@ import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
 /**
  * @title ChannelRegistry
  */
-contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
-
+contract ChannelRegistry {
     event NewChannel(address sender, uint256 id, bytes data);
     event ChannelAction(address sender, bytes action);
 
@@ -19,8 +18,6 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
             /* Incrementing before assignment ensures that first tokenId is 1. */
             channelId = ++channelCounter;
         }           
-        // Mint channelId token to registry
-        _mint(address(this), channelId, 1, new bytes(0));
         // Emit for indexing
         emit NewChannel(msg.sender, channelId, data);        
     }
@@ -28,11 +25,6 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
     function writeToChannel(bytes memory data) external {
         emit ChannelAction(msg.sender, data);
     }    
-
-    // NOTE: Required for compatibility with inherited ERC1155 standard
-    function uri(uint256 /* id */) public pure override returns (string memory) {
-        return "NOTE: Uris not supported in this ERC1155 implementation";
-    }
 
     /*
         DEFINING OFFCHAIN SCHEMA FOR CHANNEL CREATION
