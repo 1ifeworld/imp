@@ -141,6 +141,12 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
         A similar function wille exist on the 1155 registry, which is what will let us bundle
         createToken + writeToChannel actions together in case of user not already having a 
         smart contract wallet to facilitate txn bundling
+
+
+        Newer NOTE:
+        we might not need the router version because thers no need for bundle txns
+        if River wallet in server is processing txns on behalf of users who have delegated?
+        can just call multiple txns in a row?
     */
     function writeToChannelViaRouter(address sender, bytes memory data) external {
         if (msg.sender != router) revert Sender_Not_Router();
