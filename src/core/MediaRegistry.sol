@@ -24,7 +24,6 @@ contract MediaRegistry is ERC1155 {
 
     function trustedCreateToken(
         address attribution, 
-        address to, 
         address admin, 
         string memory mediaUri
     ) external returns (uint256 id) {
@@ -37,14 +36,13 @@ contract MediaRegistry is ERC1155 {
         // Assign uri
         idToUri[id] = SSTORE2.write(bytes(mediaUri));
         // Mint new token
-        _trustedMint(attribution, to, id, 1, new bytes(0));
+        _trustedMint(attribution, id, 1, new bytes(0));
         // Emit for indexing
         emit URI(mediaUri, id);
     }
 
     function trustedCreateTokens(
         address attribution, 
-        address to, 
         address admin, 
         string[] memory mediaUris
     ) external returns (uint256[] memory ids) {
@@ -66,7 +64,7 @@ contract MediaRegistry is ERC1155 {
             emit URI(mediaUris[i], ids[i]);
         }
         // Mint new tokens
-        _trustedBatchMint(attribution, to, ids, _singleton(quantity), new bytes(0));
+        _trustedBatchMint(attribution, ids, _singleton(quantity), new bytes(0));
     }    
 
     ////////////////////////////////////////////////////////////
@@ -94,15 +92,15 @@ contract MediaRegistry is ERC1155 {
     // NOTE: NO ACCESS CONTROL CHECKS
     // ENFORCE ELSEWHERE
     // SHOULD ONLY BE ACCESSIBLE BY _trustedOperator
-    function _trustedMint(address attribution, address to, uint256 id, uint256 amount, bytes memory data) internal {
-        balanceOf[to][id] += amount;
+    function _trustedMint(address attribution, uint256 id, uint256 amount, bytes memory data) internal {
+        balanceOf[attribution][id] += amount;
 
-        emit TransferSingle(attribution, address(0), to, id, amount);
+        emit TransferSingle(attribution, address(0), attribution, id, amount);
 
         require(
-            to.code.length == 0
-                ? to != address(0)
-                : ERC1155TokenReceiver(to).onERC1155Received(attribution, address(0), id, amount, data)
+            attribution.code.length == 0
+                ? attribution != address(0)
+                : ERC1155TokenReceiver(attribution).onERC1155Received(attribution, address(0), id, amount, data)
                     == ERC1155TokenReceiver.onERC1155Received.selector,
             "UNSAFE_RECIPIENT"
         );
@@ -113,7 +111,6 @@ contract MediaRegistry is ERC1155 {
     // SHOULD ONLY BE ACCESSIBLE BY _trustedOperator
     function _trustedBatchMint(
         address attribution,
-        address to,
         uint256[] memory ids,
         uint256[] memory amounts,
         bytes memory data
@@ -123,7 +120,7 @@ contract MediaRegistry is ERC1155 {
         require(idsLength == amounts.length, "LENGTH_MISMATCH");
 
         for (uint256 i = 0; i < idsLength;) {
-            balanceOf[to][ids[i]] += amounts[i];
+            balanceOf[attribution][ids[i]] += amounts[i];
 
             // An array can't have a total length
             // larger than the max uint256 value.
@@ -132,12 +129,12 @@ contract MediaRegistry is ERC1155 {
             }
         }
 
-        emit TransferBatch(attribution, address(0), to, ids, amounts);
+        emit TransferBatch(attribution, address(0), attribution, ids, amounts);
 
         require(
-            to.code.length == 0
-                ? to != address(0)
-                : ERC1155TokenReceiver(to).onERC1155BatchReceived(attribution, address(0), ids, amounts, data)
+            attribution.code.length == 0
+                ? attribution != address(0)
+                : ERC1155TokenReceiver(attribution).onERC1155BatchReceived(attribution, address(0), ids, amounts, data)
                     == ERC1155TokenReceiver.onERC1155BatchReceived.selector,
             "UNSAFE_RECIPIENT"
         );
