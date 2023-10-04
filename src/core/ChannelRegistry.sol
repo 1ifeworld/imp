@@ -29,7 +29,7 @@ contract ChannelRegistry is ERC1155, ERC1155TokenReceiver {
         emit ChannelAction(msg.sender, data);
     }    
 
-    /// @dev: Required for compatibility with inherited ERC1155 standard
+    // NOTE: Required for compatibility with inherited ERC1155 standard
     function uri(uint256 /* id */) public pure override returns (string memory) {
         return "NOTE: Uris not supported in this ERC1155 implementation";
     }
