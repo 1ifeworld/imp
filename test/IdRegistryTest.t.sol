@@ -27,9 +27,11 @@ contract IdRegistryTest is Test {
     // 46k gas for second registration (and beyond) since counter going from not zero -> not zero
     function test_secondRegister() public {
         vm.prank(user);
-        idRegistry.register(backup);
+        uint256 firstRid = idRegistry.register(backup);
         vm.prank(address(0x1111));
-        idRegistry.register(backup);
+        uint256 secondRid = idRegistry.register(backup);
+        require(firstRid == 1, "first rid not incremented correctly");
+        require(secondRid == 2, "second rid not incremented correctly");
     }    
 
     function test_Revert_OneIdPerAddress_register() public {
