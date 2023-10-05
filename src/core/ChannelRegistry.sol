@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
-
 /**
  * @title ChannelRegistry
  */
@@ -23,7 +21,7 @@ contract ChannelRegistry {
         emit NewChannel(msg.sender, channelId, data);        
     }
 
-    function writeToChannel(bytes memory data) external {
+    function submitChannelAction(bytes memory data) external {
         emit ChannelAction(msg.sender, data);
     }    
 
