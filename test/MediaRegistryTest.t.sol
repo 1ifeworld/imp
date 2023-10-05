@@ -21,10 +21,18 @@ contract MediaRegistryTest is Test {
         vm.stopPrank();
     }    
 
-    function test_trustedCreateToken() public {
+    function test_a_trustedCreateToken() public {
         vm.startPrank(trustedOperator);
         mediaRegistry.trustedCreateToken(mockAttribution, admin, mockUri);     
     }  
+
+    function test_b_trustedCreateTokens() public {
+        vm.startPrank(trustedOperator);
+        string[] memory mockUris = new string[](2);
+        mockUris[0] = mockUri;
+        mockUris[1] = mockUri;
+        mediaRegistry.trustedCreateTokens(mockAttribution, admin, mockUris);     
+    }      
 
     /* HELPERS */
 }

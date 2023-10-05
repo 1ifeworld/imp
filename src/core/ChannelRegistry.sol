@@ -7,6 +7,7 @@ import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
  * @title ChannelRegistry
  */
 contract ChannelRegistry {
+
     event NewChannel(address sender, uint256 id, bytes data);
     event ChannelAction(address sender, bytes action);
 
@@ -48,9 +49,6 @@ contract ChannelRegistry {
             - include channelAccessData that matches designated channelAccessScheme
             - include a valid channelUri
         - if all the above is true, AND the msg.sender has a valid rId,
-
-
-
 
         checking for the relationship between rId and Signer. what does that produce? is it a hash?  
                 // Decode incoming data
