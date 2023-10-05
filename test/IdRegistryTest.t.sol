@@ -24,7 +24,7 @@ contract IdRegistryTest is Test {
     }
 
     // 68k gas for first registration since counter going from zero -> not zero
-    // 46k gas for second registration since counter going from not zero -> not zero
+    // 46k gas for second registration (and beyond) since counter going from not zero -> not zero
     function test_secondRegister() public {
         vm.prank(user);
         idRegistry.register(backup);
