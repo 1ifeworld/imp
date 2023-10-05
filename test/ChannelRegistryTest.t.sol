@@ -36,6 +36,8 @@ contract ChannelRegistryTest is Test {
                 - description (string)
                 - cover image uri (string), which itself should be a pointer to decentralized file storage provider
     */
+    // 29k gas for new channel since counter going from zero -> not zero
+    // 7k gas for second (and beyond) new channels since counter going from non zero -> not zero
     function test_newChannel() public {
         // setup new channel inputs
         uint256 mockRid = 1920;
@@ -48,6 +50,8 @@ contract ChannelRegistryTest is Test {
         // encode channel inputs
         bytes memory encodedNewChannelData = abi.encode(mockRid, mockAccessScehma, mockAccessSchemaData, mockChannelUri);        
         // create new channel
+        channelRegistry.newChannel(encodedNewChannelData);     
+        // create second channel for gas comparison
         channelRegistry.newChannel(encodedNewChannelData);     
     }  
 
