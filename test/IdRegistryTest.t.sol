@@ -39,7 +39,7 @@ contract IdRegistryTest is Test {
         idRegistry.register(backup);
         // should fail because once user has registered an id,
         // cant register another one unless they transfer the id first
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSignature("HasId()"));
         idRegistry.register(backup);
     }    
 

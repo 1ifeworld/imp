@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import {ERC1155, ERC1155TokenReceiver} from "solmate/tokens/ERC1155.sol";
 import {ReentrancyGuard} from "openzeppelin-contracts/security/ReentrancyGuard.sol";
 import "sstore2/SSTORE2.sol";
+import {IdRegistry} from "./IdRegistry.sol";
 import {ISaleModule} from "./interfaces/ISaleModule.sol";
 import {FundsReceiver} from "../utils/FundsReceiver.sol";
 import {TransferUtils} from "../utils/TransferUtils.sol";
@@ -20,20 +21,23 @@ contract MediaRegistry is
     event Collected(address sender, address recipient, uint256 tokenId, uint256 quantity, uint256 price);
 
     error Not_Trusted_Operator();
+    error Trusted_Operator_Not_Approved();
     error Admin_Restricted_Access();
     error Sale_Module_Not_Registered();
     error No_Collect_Access();
     error Incorrect_Msg_Value();
     error ETHTransferFailed(address recipient, uint256 amount);
 
-    address internal immutable _trustedOperator;
+    IdRegistry public immutable idRegistry;
+    address public immutable trustedOperator;    
     uint256 public idCounter;
     mapping(uint256 => address) public idToAdmin;
     mapping(uint256 => address) public idToUri;
     mapping(uint256 => address) public idToSaleModule;
 
-    constructor(address trustedOperator) {
-        _trustedOperator = trustedOperator;
+    constructor(address _idRegistry, address _trustedOperator) {
+        idRegistry = IdRegistry(_idRegistry);
+        trustedOperator = _trustedOperator;
     }
 
     // consider adding back in ability to designate different recipietnt address
@@ -72,13 +76,17 @@ contract MediaRegistry is
     }
 
     // consider adding back in ability to designate different recipietny address
-    // than attribution address
-    function trustedCreateToken(address attribution, address admin, string memory mediaUri)
+    // than attribution rid
+    function trustedCreateToken(uint256 rid, address admin, string memory mediaUri)
         external
         returns (uint256 id)
     {
+        // Cache msg.sender
+        address sender = msg.sender;
         // Confirm transaction coming from trusted operator
-        if (msg.sender != _trustedOperator) revert Not_Trusted_Operator();
+        if (sender != trustedOperator) revert Not_Trusted_Operator();
+        // Confirm target rid has approved trustedOperator to create media on its behalf
+        if (!idRegistry.requestCallApproval(rid, sender)) revert Trusted_Operator_Not_Approved();   
         // Increment and assign new tokenId
         id = ++idCounter;
         // Assign admin
@@ -86,7 +94,7 @@ contract MediaRegistry is
         // Assign uri
         idToUri[id] = SSTORE2.write(bytes(mediaUri));
         // Mint new token
-        _trustedMint(attribution, id, 1, new bytes(0));
+        _trustedMint(idRegistry[rid], id, 1, new bytes(0));
         // Emit for indexing
         emit URI(mediaUri, id);
     }
@@ -96,7 +104,7 @@ contract MediaRegistry is
         returns (uint256[] memory ids)
     {
         // Confirm transaction coming from trusted operator
-        if (msg.sender != _trustedOperator) revert Not_Trusted_Operator();
+        if (msg.sender != trustedOperator) revert Not_Trusted_Operator();
         // Cache token quantity
         uint256 quantity = mediaUris.length;
         // Initialize ids array for return
@@ -186,7 +194,7 @@ contract MediaRegistry is
 
     // NOTE: NO ACCESS CONTROL CHECKS
     // ENFORCE ELSEWHERE
-    // SHOULD ONLY BE ACCESSIBLE BY _trustedOperator
+    // SHOULD ONLY BE ACCESSIBLE BY trustedOperator
     function _trustedMint(address attribution, uint256 id, uint256 amount, bytes memory data) internal {
         balanceOf[attribution][id] += amount;
 
@@ -203,7 +211,7 @@ contract MediaRegistry is
 
     // NOTE: NO ACCESS CONTROL CHECKS
     // ENFORCE ELSEWHERE
-    // SHOULD ONLY BE ACCESSIBLE BY _trustedOperator
+    // SHOULD ONLY BE ACCESSIBLE BY trustedOperator
     function _trustedBatchMint(address attribution, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
         internal
         virtual
