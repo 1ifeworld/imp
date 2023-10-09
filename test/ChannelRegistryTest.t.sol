@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import {Test, console2} from "forge-std/Test.sol";
 
 import {ChannelRegistry} from "../src/core/ChannelRegistry.sol";
+import {Account} from "../src/account/Account.sol";
 
 contract ChannelRegistryTest is Test {
     /* ChannelRegistry architecture */
