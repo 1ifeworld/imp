@@ -16,17 +16,30 @@ import {UserOperationLib} from "account-abstraction/interfaces/UserOperation.sol
 
 import {TokenCallbackHandler} from "./utils/TokenCallbackHandler.sol";
 
+/*
+    Things to consider adding
+
+    - protected upgrade path, can only upgrade to impls registered by trusted operator
+    - mutable _entrypoint address? look into likelihood entry point address changes in future
+    - move events + errors + storage into seperate file
+    - more restrictions on on what can be executed?
+        - registered targets?
+        - registered selectors?
+    - some way to allow for different types of signing mechanisms to be allowed overtime in 
+        _validateSignature() function?
+*/
+
 /**
   * Based on ethinfitism `SimpleAccount.sol` implementation
   */
 contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Initializable {
     using ECDSA for bytes32;
 
+    IEntryPoint private immutable _entryPoint;
+
     // NOTE: could potentially inherit the oz access level impl
     // NOTE: without an ddition
-    mapping(address => uint256) public accessLevel;
-
-    IEntryPoint private immutable _entryPoint;
+    mapping(address => uint256) public accessLevel;    
 
     event RiverAccountInitialized(IEntryPoint indexed entryPoint, address indexed admin);
     event AdminAdded(address indexed sender, address indexed admin);
@@ -35,6 +48,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
 
     error Only_Admin();
     error OnlyAdmin_Or_Entrypoint();
+    error Mismatched_Array_Lengths();
 
     modifier onlyAdmin() {
         _onlyAdmin();
@@ -76,6 +90,9 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     function executeBatch(address[] calldata dest, uint256[] calldata value, bytes[] calldata func) external {
         _requireFromEntryPointOrAdmin();
         require(dest.length == func.length && (value.length == 0 || value.length == func.length), "wrong array lengths");
+        // note: test for gas efficiency and consider replacing require with this if + custom revert
+        // if (dest.length != func.length || (value.length != 0 && value.length != func.length)) revert Mismatched_Array_Lengths();
+
         if (value.length == 0) {
             for (uint256 i = 0; i < dest.length; i++) {
                 _call(dest[i], 0, func[i]);
@@ -146,7 +163,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
     internal override virtual returns (uint256 validationData) {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
-        // Return fail value if recovered address does not have accessLevel > 0
+        // Return fail value if recovered address accessLevel < 1
         if (accessLevel[hash.recover(userOp.signature)] < 1)
             return SIG_VALIDATION_FAILED;
         return 0;
