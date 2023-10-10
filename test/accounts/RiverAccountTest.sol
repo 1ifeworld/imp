@@ -9,7 +9,7 @@ import "account-abstraction/core/EntryPoint.sol";
 //Utils
 import {Utilities} from "./Utilities.sol";
 
-contract AccountTest is TestHelper {
+contract RiverAccountTest is TestHelper {
     uint256 internal constant gasPrice = 1000000000;
     Utilities internal utils;
 
