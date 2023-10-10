@@ -35,7 +35,7 @@ contract RiverAccountTest is TestHelper {
     function test_Revert_NonAdmin_TransferEth(address receiver) public {
         (RiverAccount account1,) = createAccountWithFactory(1205, accountAdmin.addr);
         vm.deal(accountAddress, 3 ether);
-        vm.expectRevert("account: not Admin or EntryPoint");
+        vm.expectRevert(abi.encodeWithSignature("OnlyAdmin_Or_Entrypoint()"));
         account.execute(receiver, 1 ether, defaultBytes);
     }
 
@@ -83,7 +83,7 @@ contract RiverAccountTest is TestHelper {
         vm.prank(accountAdmin.addr);
         account1.giveApproval(riverNetSigner.addr);        
         assertEq(account1.accessLevel(riverNetSigner.addr), 1);
-        vm.expectRevert("account: not Admin or EntryPoint");
+        vm.expectRevert(abi.encodeWithSignature("OnlyAdmin_Or_Entrypoint()"));
         account1.execute(receiver, 1 ether, defaultBytes);
     }    
 

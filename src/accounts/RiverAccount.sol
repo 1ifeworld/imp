@@ -34,6 +34,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     event ApprovalRemoved(address indexed sender, address indexed target);
 
     error Only_Admin();
+    error OnlyAdmin_Or_Entrypoint();
 
     modifier onlyAdmin() {
         _onlyAdmin();
@@ -57,7 +58,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     // NOTE: could potentially change the require to check if access > 1
     function _onlyAdmin() internal view {
         // directly from admin, or through the account itself (which gets redirected through execute())
-        if(accessLevel[msg.sender] != 2 && msg.sender != address(this)) revert Only_Admin();
+        if (accessLevel[msg.sender] != 2 && msg.sender != address(this)) revert Only_Admin();
     }
 
     /**
@@ -137,7 +138,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     // grant an address the ability to produce a valid signature
     // for a user op originating from the entry point
     function _requireFromEntryPointOrAdmin() internal view {
-        require(msg.sender == address(entryPoint()) || accessLevel[msg.sender] == 2, "account: not Admin or EntryPoint");
+        if (accessLevel[msg.sender] != 2 && msg.sender != address(this)) revert OnlyAdmin_Or_Entrypoint();
     }
 
     /// implement template method of BaseAccount
