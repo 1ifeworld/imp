@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import "account-abstraction/core/EntryPoint.sol";
-import {Account} from "../../src/accounts/Account.sol";
+import {RiverAccount} from "../../src/accounts/RiverAccount.sol";
 import {AccountFactory} from "../../src/accounts/AccountFactory.sol";
 
 contract Utilities is Test {
@@ -58,7 +58,7 @@ contract Utilities is Test {
         returns (bytes memory)
     {
         return hexConcat(
-            abi.encodePacked(address(AccountFactory)),
+            abi.encodePacked(address(accountFactory)),
             abi.encodeWithSignature("createAccount(address,uint256)", accountOwner, salt)
         );
     }
@@ -68,7 +68,7 @@ contract Utilities is Test {
         view
         returns (address)
     {
-        return Factory.getAddress(accountOwner, salt);
+        return accountFactory.getAddress(accountOwner, salt);
     }
 
     function getBalance(address account) public view returns (uint256) {

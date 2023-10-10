@@ -4,14 +4,14 @@ pragma solidity 0.8.20;
 import "forge-std/Test.sol";
 import "account-abstraction/core/EntryPoint.sol";
 
-import "../../src/accounts/Account.sol";
+import {RiverAccount} from "../../src/accounts/RiverAccount.sol";
 import "../../src/accounts/AccountFactory.sol";
 
 contract TestHelper is Test {
     Account internal accountAdmin;
     EntryPoint internal entryPoint;
-    Account internal account;
-    Account internal implementation;
+    RiverAccount internal account;
+    RiverAccount internal implementation;
     AccountFactory internal accountFactory;
 
     address internal accountAddress;
@@ -41,30 +41,32 @@ contract TestHelper is Test {
         entryPointAddress = address(entryPoint);
     }
 
-    // function createAccount(uint256 _factorySalt, uint256 _accountSalt) internal {
-    //     accountFactory = new AccountFactory{salt: bytes32(_factorySalt)}(entryPoint);
-    //     implementation = accountFactory.accountImplementation();
-    //     accountFactory.createAccount(accountAdmin.addr, _accountSalt);
-    //     accountAddress = payable(accountFactory.getAddress(accountAdmin.addr, _accountSalt));
-    //     account = Account(payable(accountAddress));
-    // }
+    function createAccount(uint256 _factorySalt, uint256 _accountSalt) internal {
+        accountFactory = new AccountFactory{salt: bytes32(_factorySalt)}(entryPoint);
+        implementation = accountFactory.accountImplementation();
+        accountFactory.createAccount(accountAdmin.addr, _accountSalt);
+        accountAddress = payable(accountFactory.getAddress(accountAdmin.addr, _accountSalt));
+        account = RiverAccount(payable(accountAddress));
+    }
 
-    // function createFactory(uint256 _factorySalt) internal returns (AccountFactoryß _factory) {
-    //     _factory = new AccountFactory{salt: bytes32(_factorySalt)}(entryPoint);
-    // }
+    function createFactory(uint256 _factorySalt) internal returns (AccountFactory _factory) {
+        _factory = new AccountFactory{salt: bytes32(_factorySalt)}(entryPoint);
+    }
 
-    // function createAccountWithFactory(uint256 _accountSalt) internal returns (Account, address) {
-    //     accountFactory.createAccount(accountAdmin.addr, _accountSalt);
-    //     address _accountAddress = accountFactory.getAddress(accountAdmin.addr, _accountSalt);
-    //     return (Account(payable(_accountAddress)), _accountAddress);
-    // }
+    function createAccountWithFactory(uint256 _factorySalt, uint256 _accountSalt) internal returns (RiverAccount, address) {
+        accountFactory = new AccountFactory{salt: bytes32(_factorySalt)}(entryPoint);        
+        accountFactory.createAccount(accountAdmin.addr, _accountSalt);
+        address _accountAddress = accountFactory.getAddress(accountAdmin.addr, _accountSalt);
+        return (RiverAccount(payable(_accountAddress)), _accountAddress);
+        
+    }
 
-    // function createAccountWithFactory(uint256 _accountSalt, address _ownerAddress)
-    //     internal
-    //     returns (Account, address)
-    // {
-    //     accountFactory.createAccount(_ownerAddress, _accountSalt);
-    //     address _accountAddress = accountFactory.getAddress(_ownerAddress, _accountSalt);
-    //     return (Account(payable(_accountAddress)), _accountAddress);
-    // }
+    function createAccountWithFactory(uint256 _accountSalt, address _adminAddress)
+        internal
+        returns (RiverAccount, address)
+    {
+        accountFactory.createAccount(_adminAddress, _accountSalt);
+        address _accountAddress = accountFactory.getAddress(_adminAddress, _accountSalt);
+        return (RiverAccount(payable(_accountAddress)), _accountAddress);
+    }
 }

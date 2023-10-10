@@ -19,7 +19,7 @@ import {TokenCallbackHandler} from "./utils/TokenCallbackHandler.sol";
 /**
   * Based on ethinfitism `SimpleAccount.sol` implementation
   */
-contract Account is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Initializable {
+contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Initializable {
     using ECDSA for bytes32;
 
     mapping(address => bool) public isAdmin;
@@ -89,7 +89,7 @@ contract Account is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Initiali
     }
 
     function _initialize(address initialAdmin) internal virtual {
-        isAdmin[msg.sender] = true;
+        isAdmin[initialAdmin] = true;
         emit SimpleAccountInitialized(_entryPoint, initialAdmin);
     }
 

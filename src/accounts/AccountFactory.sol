@@ -4,16 +4,16 @@ pragma solidity 0.8.20;
 import "openzeppelin-contracts/utils/Create2.sol";
 import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import "./Account.sol";
+import "./RiverAccount.sol";
 
 /**
   * Based on ethinfitism `AccountFactory.sol` implementation
   */
 contract AccountFactory {
-    Account public immutable accountImplementation;
+    RiverAccount public immutable accountImplementation;
 
     constructor(IEntryPoint _entryPoint) {
-        accountImplementation = new Account(_entryPoint);
+        accountImplementation = new RiverAccount(_entryPoint);
     }
 
     /**
@@ -22,15 +22,15 @@ contract AccountFactory {
      * Note that during UserOperation execution, this method is called only if the account is not deployed.
      * This method returns an existing account address so that entryPoint.getSenderAddress() would work even after account creation
      */
-    function createAccount(address initialAdmin,uint256 salt) public returns (Account ret) {
+    function createAccount(address initialAdmin, uint256 salt) public returns (RiverAccount ret) {
         address addr = getAddress(initialAdmin, salt);
         uint codeSize = addr.code.length;
         if (codeSize > 0) {
-            return Account(payable(addr));
+            return RiverAccount(payable(addr));
         }
-        ret = Account(payable(new ERC1967Proxy{salt : bytes32(salt)}(
+        ret = RiverAccount(payable(new ERC1967Proxy{salt : bytes32(salt)}(
                 address(accountImplementation),
-                abi.encodeCall(Account.initialize, (initialAdmin))
+                abi.encodeCall(RiverAccount.initialize, (initialAdmin))
             )));
     }
 
@@ -42,7 +42,7 @@ contract AccountFactory {
                 type(ERC1967Proxy).creationCode,
                 abi.encode(
                     address(accountImplementation),
-                    abi.encodeCall(Account.initialize, (initialAdmin))
+                    abi.encodeCall(RiverAccount.initialize, (initialAdmin))
                 )
             )));
     }
