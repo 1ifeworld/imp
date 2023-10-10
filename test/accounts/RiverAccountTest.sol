@@ -2,12 +2,10 @@
 pragma solidity 0.8.20;
 
 import "./TestHelper.sol";
+import {Utilities} from "./Utilities.sol";
 import "../../src/accounts/RiverAccount.sol";
 import "../../src/accounts/AccountFactory.sol";
-
 import "account-abstraction/core/EntryPoint.sol";
-//Utils
-import {Utilities} from "./Utilities.sol";
 
 contract RiverAccountTest is TestHelper {
     uint256 internal constant gasPrice = 1000000000;
