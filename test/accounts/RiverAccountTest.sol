@@ -15,13 +15,14 @@ contract RiverAccountTest is TestHelper {
 
     function setUp() public {
         utils = new Utilities();
-        accountAdmin = utils.createAddress("account_owner");
+        riverNetSigner = utils.createAddress("river_net_signer");
+        accountAdmin = utils.createAddress("account_admin");
         deployEntryPoint(1201);
         createAccount(1202, 1203);
     }
 
     // Owner should be able to call transfer
-    function test_TransferByOwner() public {
+    function test_TransferEth() public {
         (RiverAccount account1, address accountAddress1) = createAccountWithFactory(1204, accountAdmin.addr);
         vm.deal(accountAddress1, 2 ether);
         Account memory receiver = utils.createAddress("receiver");
@@ -31,7 +32,7 @@ contract RiverAccountTest is TestHelper {
     }
 
     // Other account should not be able to call transfer
-    function test_TransferByNonOwner(address receiver) public {
+    function test_Revert_NonAdmin_TransferEth(address receiver) public {
         (RiverAccount account1,) = createAccountWithFactory(1205, accountAdmin.addr);
         vm.deal(accountAddress, 3 ether);
         vm.expectRevert("account: not Admin or EntryPoint");
@@ -46,8 +47,8 @@ contract RiverAccountTest is TestHelper {
         assertEq(preBalance - postBalance, expectedPay);
     }
 
-    // Should return NO_SIG_VALIDATION on wrong signature
-    function test_WrongSignature() public {
+    // Should return NO_SIG_VALIDATION on invalid signature
+    function test_Revert_InvalidSignature() public {
         (UserOperation memory op,,,) = _validateUserOpSetup();
         bytes32 zeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000;
         UserOperation memory op2 = op;
@@ -57,6 +58,61 @@ contract RiverAccountTest is TestHelper {
         uint256 deadline = account.validateUserOp(op2, zeroHash, 0);
 
         assertEq(deadline, 1);
+    }
+
+    // Testing giveApproval functionality on RiverAccount impls
+    function test_giveApproval() public {
+        (RiverAccount account1,) = createAccountWithFactory(1205, accountAdmin.addr);
+        vm.prank(accountAdmin.addr);
+        account1.giveApproval(riverNetSigner.addr);
+        assertEq(account1.accessLevel(riverNetSigner.addr), 1);
+    }    
+
+    // Testing giveApproval functionality on RiverAccount impls
+    function test_Revert_NotAdmin_giveApproval() public {
+        (RiverAccount account1,) = createAccountWithFactory(1205, accountAdmin.addr);
+        vm.prank(address(0x123));
+        vm.expectRevert();
+        account1.giveApproval(riverNetSigner.addr);
+    }
+
+    function test_UserOp_FromApproval() public {
+        (RiverAccount account1,) = createAccountWithFactory(1205, accountAdmin.addr);
+        vm.deal(address(account1), 0.2 ether);
+        vm.prank(accountAdmin.addr);
+        account1.giveApproval(riverNetSigner.addr);
+
+        UserOperation memory op = defaultOp;
+        op.sender = address(account1);
+        op = utils.signUserOp(op, riverNetSigner.key, entryPointAddress, chainId);
+
+        uint256 expectedPay = gasPrice * (op.callGasLimit + op.verificationGasLimit);
+        bytes32 userOpHash = utils.getUserOpHash(op, entryPointAddress, chainId);
+        uint256 preBalance = utils.getBalance(address(account1));        
+
+        vm.prank(entryPointAddress);
+        uint256 validOp = account1.validateUserOp{gas: gasPrice}(op, userOpHash, expectedPay);    
+        require(validOp == 0, "invalid op");
+    }       
+
+    function test_Revert_MaliciousSigner_UserOp_FromApproval() public {
+                (RiverAccount account1,) = createAccountWithFactory(1205, accountAdmin.addr);
+        vm.deal(address(account1), 0.2 ether);
+        vm.prank(accountAdmin.addr);
+        account1.giveApproval(riverNetSigner.addr);
+
+        UserOperation memory op = defaultOp;
+        op.sender = address(account1);
+        Account memory maliciousSigner = utils.createAddress("malicious_signer");
+        op = utils.signUserOp(op, maliciousSigner.key, entryPointAddress, chainId);
+
+        uint256 expectedPay = gasPrice * (op.callGasLimit + op.verificationGasLimit);
+        bytes32 userOpHash = utils.getUserOpHash(op, entryPointAddress, chainId);
+        uint256 preBalance = utils.getBalance(address(account1));        
+
+        vm.prank(entryPointAddress);
+        uint256 invalidOp = account1.validateUserOp{gas: gasPrice}(op, userOpHash, expectedPay);    
+        require(invalidOp == 1, "op was not invalid as expected");        
     }
 
     // AccountFactory
@@ -69,6 +125,9 @@ contract RiverAccountTest is TestHelper {
         _factory.createAccount(newOwner.addr, 1207);
         assertEq(utils.isContract(testAccount), true);
     }
+
+    // entry point
+    // test that we can validate a userOp created by an approved signature
 
     function _validateUserOpSetup()
         internal

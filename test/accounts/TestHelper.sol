@@ -8,6 +8,7 @@ import {RiverAccount} from "../../src/accounts/RiverAccount.sol";
 import "../../src/accounts/AccountFactory.sol";
 
 contract TestHelper is Test {
+    Account internal riverNetSigner;
     Account internal accountAdmin;
     EntryPoint internal entryPoint;
     RiverAccount internal account;

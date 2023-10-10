@@ -23,6 +23,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     using ECDSA for bytes32;
 
     // NOTE: could potentially inherit the oz access level impl
+    // NOTE: without an ddition
     mapping(address => uint256) public accessLevel;
 
     IEntryPoint private immutable _entryPoint;
@@ -31,6 +32,8 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     event AdminAdded(address indexed sender, address indexed admin);
     event ApprovalAdded(address indexed sender, address indexed target);
     event ApprovalRemoved(address indexed sender, address indexed target);
+
+    error Only_Admin();
 
     modifier onlyAdmin() {
         _onlyAdmin();
@@ -54,7 +57,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     // NOTE: could potentially change the require to check if access > 1
     function _onlyAdmin() internal view {
         // directly from admin, or through the account itself (which gets redirected through execute())
-        require(accessLevel[msg.sender] == 2 || msg.sender == address(this), "only admin");
+        if(accessLevel[msg.sender] != 2 && msg.sender != address(this)) revert Only_Admin();
     }
 
     /**
