@@ -22,12 +22,14 @@ import {TokenCallbackHandler} from "./utils/TokenCallbackHandler.sol";
 contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Initializable {
     using ECDSA for bytes32;
 
-    mapping(address => bool) public isAdmin;
+    mapping(address => uint256) public accessLevel;
 
     IEntryPoint private immutable _entryPoint;
 
     event SimpleAccountInitialized(IEntryPoint indexed entryPoint, address indexed admin);
     event AdminAdded(address indexed sender, address indexed admin);
+    event ApprovalAdded(address indexed sender, address indexed target);
+    event ApprovalRemoved(address indexed sender, address indexed target);
 
     modifier onlyAdmin() {
         _onlyAdmin();
@@ -48,9 +50,10 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
         _disableInitializers();
     }
 
+    // NOTE: could potentially change the require to check if access > 1
     function _onlyAdmin() internal view {
         // directly from admin, or through the account itself (which gets redirected through execute())
-        require(isAdmin[msg.sender] || msg.sender == address(this), "only admin");
+        require(accessLevel[msg.sender] == 2 || msg.sender == address(this), "only admin");
     }
 
     /**
@@ -89,27 +92,56 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     }
 
     function _initialize(address initialAdmin) internal virtual {
-        isAdmin[initialAdmin] = true;
+        accessLevel[initialAdmin] = 2;
         emit SimpleAccountInitialized(_entryPoint, initialAdmin);
+    }
+
+    function addAdmin(address admin) public virtual onlyAdmin {
+        _addAdmin(admin);
     }
 
     // NOTE: NO ACCESS CHECKS, ENFORCE ELSEWHERE
     function _addAdmin(address admin) internal virtual {
-        isAdmin[admin] = true;
+        accessLevel[admin] = 2;
         emit AdminAdded(msg.sender, admin);
     }
 
+    function giveApproval(address target) public virtual onlyAdmin {
+        _giveApproval(target);
+    }
+
+    // NOTE: NO ACCESS CHECKS, ENFORCE ELSEWHERE
+    function _giveApproval(address target) internal virtual {
+        accessLevel[target] = 1;
+        emit ApprovalAdded(msg.sender, target);
+    }
+
+    function revokeApproval(address target) public virtual onlyAdmin {
+        _revokeApproval(target);
+    }
+
+    // NOTE: NO ACCESS CHECKS, ENFORCE ELSEWHERE
+    function _revokeApproval(address target) internal virtual {
+        accessLevel[target] = 0;
+        emit ApprovalRemoved(msg.sender, target);
+    }    
+
     // Require the function call went through EntryPoint or admin
+    // This does not also grant the ability for address's marked true in the
+    // `isApproved` mapping to preserve the split in authority between 
+    // admins who can trigger txns themselves vs approvals that only
+    // grant an address the ability to produce a valid signature
+    // for a user op originating from the entry point
     function _requireFromEntryPointOrAdmin() internal view {
-        require(msg.sender == address(entryPoint()) || isAdmin[msg.sender], "account: not Admin or EntryPoint");
+        require(msg.sender == address(entryPoint()) || accessLevel[msg.sender] == 2, "account: not Admin or EntryPoint");
     }
 
     /// implement template method of BaseAccount
     function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
     internal override virtual returns (uint256 validationData) {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
-        // Return fail value if recovered address is not an admin
-        if (!isAdmin[hash.recover(userOp.signature)])
+        // Return fail value if recovered address does not have accessLevel > 0
+        if (accessLevel[hash.recover(userOp.signature)] < 1)
             return SIG_VALIDATION_FAILED;
         return 0;
     }
