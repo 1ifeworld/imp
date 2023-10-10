@@ -22,6 +22,7 @@ import {TokenCallbackHandler} from "./utils/TokenCallbackHandler.sol";
 contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Initializable {
     using ECDSA for bytes32;
 
+    // NOTE: could potentially inherit the oz access level impl
     mapping(address => uint256) public accessLevel;
 
     IEntryPoint private immutable _entryPoint;
