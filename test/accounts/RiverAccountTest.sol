@@ -31,7 +31,7 @@ contract RiverAccountTest is TestHelper {
         assertEq(utils.getBalance(accountAddress1), 1 ether);
     }
 
-    // Other account should not be able to call transfer
+    // Other accounts should not be able to call transfer
     function test_Revert_NonAdmin_TransferEth(address receiver) public {
         (RiverAccount account1,) = createAccountWithFactory(1205, accountAdmin.addr);
         vm.deal(accountAddress, 3 ether);
@@ -75,6 +75,17 @@ contract RiverAccountTest is TestHelper {
         vm.expectRevert();
         account1.giveApproval(riverNetSigner.addr);
     }
+
+    // Approved accounts should not be able to execute functions directly, only via UserOps
+    function test_Revert_ValidApproval_TransferEth(address receiver) public {
+        (RiverAccount account1,) = createAccountWithFactory(1205, accountAdmin.addr);
+        vm.deal(address(account1), 3 ether);
+        vm.prank(accountAdmin.addr);
+        account1.giveApproval(riverNetSigner.addr);        
+        assertEq(account1.accessLevel(riverNetSigner.addr), 1);
+        vm.expectRevert("account: not Admin or EntryPoint");
+        account1.execute(receiver, 1 ether, defaultBytes);
+    }    
 
     function test_ValidUserOp_FromAdmin() public {
         (,,,, uint256 validateOpResponse) = _validateUserOpSetup();   
