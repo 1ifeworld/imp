@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import "forge-std/Test.sol";
 import "account-abstraction/core/EntryPoint.sol";
 import {RiverAccount} from "../../src/accounts/RiverAccount.sol";
-import {AccountFactory} from "../../src/accounts/AccountFactory.sol";
+import {RiverAccountFactory} from "../../src/accounts/RiverAccountFactory.sol";
 
 contract Utilities is Test {
     function createAddress(string memory _name) public returns (Account memory) {
@@ -52,7 +52,7 @@ contract Utilities is Test {
         return abi.encodePacked(r, s, v);
     }
 
-    function getAccountInitCode(address accountOwner, AccountFactory accountFactory, uint256 salt)
+    function getAccountInitCode(address accountOwner, RiverAccountFactory accountFactory, uint256 salt)
         public
         pure
         returns (bytes memory)
@@ -63,7 +63,7 @@ contract Utilities is Test {
         );
     }
 
-    function getAccountAddress(address accountOwner, AccountFactory accountFactory, uint256 salt)
+    function getAccountAddress(address accountOwner, RiverAccountFactory accountFactory, uint256 salt)
         public
         view
         returns (address)

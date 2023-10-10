@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import "./TestHelper.sol";
 import {Utilities} from "./Utilities.sol";
 import "../../src/accounts/RiverAccount.sol";
-import "../../src/accounts/AccountFactory.sol";
+import "../../src/accounts/RiverAccountFactory.sol";
 import "account-abstraction/core/EntryPoint.sol";
 
 contract RiverAccountTest is TestHelper {
@@ -129,11 +129,11 @@ contract RiverAccountTest is TestHelper {
         require(invalidOp == 1, "op was not invalid as expected");        
     }
 
-    // AccountFactory
+    // RiverAccountFactory
     // Sanity: check deployer
     function test_Deployer() public {
         Account memory newOwner = utils.createAddress("new_owner");
-        AccountFactory _factory = createFactory(1206);
+        RiverAccountFactory _factory = createFactory(1206);
         address testAccount = _factory.getAddress(newOwner.addr, 1207);
         assertEq(utils.isContract(testAccount), false);
         _factory.createAccount(newOwner.addr, 1207);
@@ -149,7 +149,7 @@ contract RiverAccountTest is TestHelper {
     {
         Account memory newAdmin = utils.createAddress("signer");
 
-        AccountFactory _factory = createFactory(1208);
+        RiverAccountFactory _factory = createFactory(1208);
         account1 = _factory.createAccount(newAdmin.addr, 1209);
         vm.deal(address(account1), 0.2 ether);
 

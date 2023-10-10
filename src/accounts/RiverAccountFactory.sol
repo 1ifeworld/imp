@@ -6,10 +6,20 @@ import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import "./RiverAccount.sol";
 
+/*
+    Things to consider
+
+    - change the createAccount inputs to be bytes memory inputs, uint256 salt
+        to allow for more flexible api into future
+        -   would need to be paired with update to the RiverAccount impl
+            to facilitate decoding of inputs in the `initialize` call
+    - allow for accountImpl to be changed over time?
+*/
+
 /**
   * Based on ethinfitism `AccountFactory.sol` implementation
   */
-contract AccountFactory {
+contract RiverAccountFactory {
     RiverAccount public immutable accountImplementation;
 
     constructor(IEntryPoint _entryPoint) {

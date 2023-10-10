@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "account-abstraction/core/EntryPoint.sol";
 
 import {RiverAccount} from "../../src/accounts/RiverAccount.sol";
-import "../../src/accounts/AccountFactory.sol";
+import "../../src/accounts/RiverAccountFactory.sol";
 
 contract TestHelper is Test {
     Account internal riverNetSigner;
@@ -13,7 +13,7 @@ contract TestHelper is Test {
     EntryPoint internal entryPoint;
     RiverAccount internal account;
     RiverAccount internal implementation;
-    AccountFactory internal accountFactory;
+    RiverAccountFactory internal accountFactory;
 
     address internal accountAddress;
     address internal entryPointAddress;
@@ -43,19 +43,19 @@ contract TestHelper is Test {
     }
 
     function createAccount(uint256 _factorySalt, uint256 _accountSalt) internal {
-        accountFactory = new AccountFactory{salt: bytes32(_factorySalt)}(entryPoint);
+        accountFactory = new RiverAccountFactory{salt: bytes32(_factorySalt)}(entryPoint);
         implementation = accountFactory.accountImplementation();
         accountFactory.createAccount(accountAdmin.addr, _accountSalt);
         accountAddress = payable(accountFactory.getAddress(accountAdmin.addr, _accountSalt));
         account = RiverAccount(payable(accountAddress));
     }
 
-    function createFactory(uint256 _factorySalt) internal returns (AccountFactory _factory) {
-        _factory = new AccountFactory{salt: bytes32(_factorySalt)}(entryPoint);
+    function createFactory(uint256 _factorySalt) internal returns (RiverAccountFactory _factory) {
+        _factory = new RiverAccountFactory{salt: bytes32(_factorySalt)}(entryPoint);
     }
 
     function createAccountWithFactory(uint256 _factorySalt, uint256 _accountSalt) internal returns (RiverAccount, address) {
-        accountFactory = new AccountFactory{salt: bytes32(_factorySalt)}(entryPoint);        
+        accountFactory = new RiverAccountFactory{salt: bytes32(_factorySalt)}(entryPoint);        
         accountFactory.createAccount(accountAdmin.addr, _accountSalt);
         address _accountAddress = accountFactory.getAddress(accountAdmin.addr, _accountSalt);
         return (RiverAccount(payable(_accountAddress)), _accountAddress);
