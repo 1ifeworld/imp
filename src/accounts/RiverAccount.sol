@@ -138,6 +138,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     }
 
     /// implement template method of BaseAccount
+    /// signatures from addresses with an accessLevel > 0 can validate signatures
     function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
     internal override virtual returns (uint256 validationData) {
         bytes32 hash = userOpHash.toEthSignedMessageHash();
