@@ -27,7 +27,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
 
     IEntryPoint private immutable _entryPoint;
 
-    event SimpleAccountInitialized(IEntryPoint indexed entryPoint, address indexed admin);
+    event RiverAccountInitialized(IEntryPoint indexed entryPoint, address indexed admin);
     event AdminAdded(address indexed sender, address indexed admin);
     event ApprovalAdded(address indexed sender, address indexed target);
     event ApprovalRemoved(address indexed sender, address indexed target);
@@ -85,7 +85,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
 
     /**
      * @dev The _entryPoint member is immutable, to reduce gas consumption.  To upgrade EntryPoint,
-     * a new implementation of SimpleAccount must be deployed with the new EntryPoint address, then upgrading
+     * a new implementation of RiverAccount must be deployed with the new EntryPoint address, then upgrading
       * the implementation by calling `upgradeTo()`
      */
     function initialize(address initialAdmin) public virtual initializer {
@@ -94,7 +94,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
 
     function _initialize(address initialAdmin) internal virtual {
         accessLevel[initialAdmin] = 2;
-        emit SimpleAccountInitialized(_entryPoint, initialAdmin);
+        emit RiverAccountInitialized(_entryPoint, initialAdmin);
     }
 
     function addAdmin(address admin) public virtual onlyAdmin {
