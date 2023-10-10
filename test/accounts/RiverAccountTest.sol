@@ -42,14 +42,14 @@ contract RiverAccountTest is TestHelper {
     // #validateUserOp
     // Should pay
     function test_Payment() public {
-        (, RiverAccount account1, uint256 preBalance, uint256 expectedPay) = _validateUserOpSetup();
+        (, RiverAccount account1, uint256 preBalance, uint256 expectedPay,) = _validateUserOpSetup();
         uint256 postBalance = utils.getBalance(address(account1));
         assertEq(preBalance - postBalance, expectedPay);
     }
 
     // Should return NO_SIG_VALIDATION on invalid signature
     function test_Revert_InvalidSignature() public {
-        (UserOperation memory op,,,) = _validateUserOpSetup();
+        (UserOperation memory op,,,,) = _validateUserOpSetup();
         bytes32 zeroHash = 0x0000000000000000000000000000000000000000000000000000000000000000;
         UserOperation memory op2 = op;
         op2.nonce = 1;
@@ -76,7 +76,12 @@ contract RiverAccountTest is TestHelper {
         account1.giveApproval(riverNetSigner.addr);
     }
 
-    function test_UserOp_FromApproval() public {
+    function test_ValidUserOp_FromAdmin() public {
+        (,,,, uint256 validateOpResponse) = _validateUserOpSetup();   
+        require(validateOpResponse == 0, "invalid op");
+    }           
+
+    function test_ValidUserOp_FromApproval() public {
         (RiverAccount account1,) = createAccountWithFactory(1205, accountAdmin.addr);
         vm.deal(address(account1), 0.2 ether);
         vm.prank(accountAdmin.addr);
@@ -95,7 +100,7 @@ contract RiverAccountTest is TestHelper {
         require(validOp == 0, "invalid op");
     }       
 
-    function test_Revert_MaliciousSigner_UserOp_FromApproval() public {
+    function test_Revert_NotAdminOrApproved_ValidUserOp() public {
                 (RiverAccount account1,) = createAccountWithFactory(1205, accountAdmin.addr);
         vm.deal(address(account1), 0.2 ether);
         vm.prank(accountAdmin.addr);
@@ -131,23 +136,23 @@ contract RiverAccountTest is TestHelper {
 
     function _validateUserOpSetup()
         internal
-        returns (UserOperation memory op, RiverAccount account1, uint256 preBalance, uint256 expectedPay)
+        returns (UserOperation memory op, RiverAccount account1, uint256 preBalance, uint256 expectedPay, uint256 validateOpResp)
     {
-        Account memory newOwner = utils.createAddress("signer");
+        Account memory newAdmin = utils.createAddress("signer");
 
         AccountFactory _factory = createFactory(1208);
-        account1 = _factory.createAccount(newOwner.addr, 1209);
+        account1 = _factory.createAccount(newAdmin.addr, 1209);
         vm.deal(address(account1), 0.2 ether);
 
         op = defaultOp;
         op.sender = address(account1);
-        op = utils.signUserOp(op, newOwner.key, entryPointAddress, chainId);
+        op = utils.signUserOp(op, newAdmin.key, entryPointAddress, chainId);
 
         expectedPay = gasPrice * (op.callGasLimit + op.verificationGasLimit);
         bytes32 userOpHash = utils.getUserOpHash(op, entryPointAddress, chainId);
         preBalance = utils.getBalance(address(account1));
 
         vm.prank(entryPointAddress);
-        account1.validateUserOp{gas: gasPrice}(op, userOpHash, expectedPay);
+        validateOpResp = account1.validateUserOp{gas: gasPrice}(op, userOpHash, expectedPay);
     }
 }
