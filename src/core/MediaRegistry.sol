@@ -16,7 +16,6 @@ contract MediaRegistry is
     ReentrancyGuard,     
     FundsReceiver 
 {
-
     event Collected(address sender, address recipient, uint256 tokenId, uint256 quantity, uint256 price);
 
     error Not_Trusted_Operator();

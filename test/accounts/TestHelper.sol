@@ -43,7 +43,7 @@ contract TestHelper is Test {
     }
 
     function createAccount(uint256 _factorySalt, uint256 _accountSalt) internal {
-        accountFactory = new RiverAccountFactory{salt: bytes32(_factorySalt)}(entryPoint);
+        accountFactory = new RiverAccountFactory{salt: bytes32(_factorySalt)}(entryPoint, riverNetSigner.addr);
         implementation = accountFactory.accountImplementation();
         accountFactory.createAccount(accountAdmin.addr, _accountSalt);
         accountAddress = payable(accountFactory.getAddress(accountAdmin.addr, _accountSalt));
@@ -51,11 +51,11 @@ contract TestHelper is Test {
     }
 
     function createFactory(uint256 _factorySalt) internal returns (RiverAccountFactory _factory) {
-        _factory = new RiverAccountFactory{salt: bytes32(_factorySalt)}(entryPoint);
+        _factory = new RiverAccountFactory{salt: bytes32(_factorySalt)}(entryPoint, riverNetSigner.addr);
     }
 
     function createAccountWithFactory(uint256 _factorySalt, uint256 _accountSalt) internal returns (RiverAccount, address) {
-        accountFactory = new RiverAccountFactory{salt: bytes32(_factorySalt)}(entryPoint);        
+        accountFactory = new RiverAccountFactory{salt: bytes32(_factorySalt)}(entryPoint, riverNetSigner.addr);        
         accountFactory.createAccount(accountAdmin.addr, _accountSalt);
         address _accountAddress = accountFactory.getAddress(accountAdmin.addr, _accountSalt);
         return (RiverAccount(payable(_accountAddress)), _accountAddress);

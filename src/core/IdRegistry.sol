@@ -6,16 +6,17 @@ pragma solidity 0.8.20;
  */
 contract IdRegistry {
 
-    event Register(address indexed to, uint256 indexed id, address backup);
+    event Register(address indexed to, uint256 indexed id, address indexed delegate, address backup);
 
     /// @dev Revert when the destination must be empty but has an rid.
     error HasId();    
 
     uint256 public idCounter;
     mapping(address => uint256) public idOwners;
+    mapping(uint256 => address) public idDelegates;
     mapping(uint256 => address) public idBackups;
 
-    function register(address backup) external returns (uint256 rid) {
+    function register(address delegate, address backup) external returns (uint256 rid) {
         // Cache msg.sender
         address sender = msg.sender;
 
@@ -28,9 +29,10 @@ contract IdRegistry {
             rid = ++idCounter;
         }        
 
-        // Assign rid + backup + emit for indexing
+        // Assign rid + delegate + backup + emit for indexing
         idOwners[sender] = rid;
+        idDelegates[rid] = delegate;
         idBackups[rid] = backup;
-        emit Register(sender, rid, backup);        
+        emit Register(sender, rid, delegate, backup);        
     }      
 }

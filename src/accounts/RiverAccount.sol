@@ -41,7 +41,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     // NOTE: without an ddition
     mapping(address => uint256) public accessLevel;    
 
-    event RiverAccountInitialized(IEntryPoint indexed entryPoint, address indexed admin);
+    event RiverAccountInitialized(IEntryPoint indexed entryPoint, address indexed admin, address indexed delegate);
     event AdminAdded(address indexed sender, address indexed admin);
     event ApprovalAdded(address indexed sender, address indexed target);
     event ApprovalRemoved(address indexed sender, address indexed target);
@@ -109,13 +109,14 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
      * a new implementation of RiverAccount must be deployed with the new EntryPoint address, then upgrading
       * the implementation by calling `upgradeTo()`
      */
-    function initialize(address initialAdmin) public virtual initializer {
-        _initialize(initialAdmin);
+    function initialize(address initialAdmin, address initialDelegate) public virtual initializer {
+        _initialize(initialAdmin, initialDelegate);
     }
 
-    function _initialize(address initialAdmin) internal virtual {
+    function _initialize(address initialAdmin, address initialDelegate) internal virtual {
         accessLevel[initialAdmin] = 2;
-        emit RiverAccountInitialized(_entryPoint, initialAdmin);
+        accessLevel[initialDelegate] = 1;
+        emit RiverAccountInitialized(_entryPoint, initialAdmin, initialDelegate);
     }
 
     function addAdmin(address admin) public virtual onlyAdmin {
@@ -159,7 +160,8 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     }
 
     /// implement template method of BaseAccount
-    /// signatures from addresses with an accessLevel > 0 can validate signatures
+    /// signatures from addresses with an accessLevel > 0 can validate signature
+    // NOTE: need to make validateSignature eip12721 compatible?
     function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
     internal override virtual returns (uint256 validationData) {
         bytes32 hash = userOpHash.toEthSignedMessageHash();

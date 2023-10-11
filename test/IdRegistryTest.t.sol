@@ -10,6 +10,7 @@ contract IdRegistryTest is Test {
     IdRegistry idRegistry;
     /* CONSTANTS */
     address user = address(0x444);
+    address riverNetSigner = address(0x555);
     address backup = address(0x007);
 
     // Set up called before each test
@@ -19,7 +20,7 @@ contract IdRegistryTest is Test {
 
     function test_register() public {
         vm.prank(user);
-        uint256 rid = idRegistry.register(backup);
+        uint256 rid = idRegistry.register(riverNetSigner, backup);
         require(rid == 1, "rid not incremented correctly");
     }
 
@@ -27,20 +28,20 @@ contract IdRegistryTest is Test {
     // 46k gas for second registration (and beyond) since counter going from not zero -> not zero
     function test_secondRegister() public {
         vm.prank(user);
-        uint256 firstRid = idRegistry.register(backup);
+        uint256 firstRid = idRegistry.register(riverNetSigner, backup);
         vm.prank(address(0x1111));
-        uint256 secondRid = idRegistry.register(backup);
+        uint256 secondRid = idRegistry.register(riverNetSigner, backup);
         require(firstRid == 1, "first rid not incremented correctly");
         require(secondRid == 2, "second rid not incremented correctly");
     }    
 
     function test_Revert_OneIdPerAddress_register() public {
         vm.startPrank(user);
-        idRegistry.register(backup);
+        idRegistry.register(riverNetSigner, backup);
         // should fail because once user has registered an id,
         // cant register another one unless they transfer the id first
         vm.expectRevert();
-        idRegistry.register(backup);
+        idRegistry.register(riverNetSigner, backup);
     }    
 
     /* HELPERS */

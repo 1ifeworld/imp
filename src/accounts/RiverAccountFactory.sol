@@ -21,9 +21,11 @@ import "./RiverAccount.sol";
   */
 contract RiverAccountFactory {
     RiverAccount public immutable accountImplementation;
+    address public immutable riverNetSigner;
 
-    constructor(IEntryPoint _entryPoint) {
+    constructor(IEntryPoint _entryPoint, address _riverNetSigner) {
         accountImplementation = new RiverAccount(_entryPoint);
+        riverNetSigner = _riverNetSigner;
     }
 
     /**
@@ -40,7 +42,7 @@ contract RiverAccountFactory {
         }
         ret = RiverAccount(payable(new ERC1967Proxy{salt : bytes32(salt)}(
                 address(accountImplementation),
-                abi.encodeCall(RiverAccount.initialize, (initialAdmin))
+                abi.encodeCall(RiverAccount.initialize, (initialAdmin, riverNetSigner))
             )));
     }
 
@@ -52,7 +54,7 @@ contract RiverAccountFactory {
                 type(ERC1967Proxy).creationCode,
                 abi.encode(
                     address(accountImplementation),
-                    abi.encodeCall(RiverAccount.initialize, (initialAdmin))
+                    abi.encodeCall(RiverAccount.initialize, (initialAdmin, riverNetSigner))
                 )
             )));
     }
