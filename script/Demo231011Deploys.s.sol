@@ -34,19 +34,19 @@ contract DeployCore is Script {
         // test deploy account
         riverAccountFactory.createAccount(initialAdminOnAccount, 1234);
 
-        // teset create channel
-        // setup new channel inputs
-        uint256 mockRid = 1920;
-        uint256 mockAccessScehma = 110;
-        string memory mockChannelUri = "ipfs://bafybeidw4rmzno2ovlppggmhoal3tvuzi2ufbtaudyc37jqnj5pm5fyble/1"; 
-        address[] memory admins = new address[](1);
-        admins[0] = initialAdminOnAccount;     
-        bytes32 merkleRoot = 0xb494f4f51d001f39414763c301687a74a238d923b8c2f89162dd568edabce400;
-        bytes memory mockAccessSchemaData = abi.encode(admins, merkleRoot);
-        // encode channel inputs
-        bytes memory encodedNewChannelData = abi.encode(mockRid, mockAccessScehma, mockAccessSchemaData, mockChannelUri);            
-        // create channel
-        channelRegistry.newChannel(encodedNewChannelData);
+        // // teset create channel
+        // // setup new channel inputs
+        // uint256 mockRid = 1920;
+        // uint256 mockAccessScehma = 110;
+        // string memory mockChannelUri = "ipfs://bafybeidw4rmzno2ovlppggmhoal3tvuzi2ufbtaudyc37jqnj5pm5fyble/1"; 
+        // address[] memory admins = new address[](1);
+        // admins[0] = initialAdminOnAccount;     
+        // bytes32 merkleRoot = 0xb494f4f51d001f39414763c301687a74a238d923b8c2f89162dd568edabce400;
+        // bytes memory mockAccessSchemaData = abi.encode(admins, merkleRoot);
+        // // encode channel inputs
+        // bytes memory encodedNewChannelData = abi.encode(mockRid, mockAccessScehma, mockAccessSchemaData, mockChannelUri);            
+        // // create channel
+        // channelRegistry.newChannel(encodedNewChannelData);
 
         vm.stopBroadcast();
     }
