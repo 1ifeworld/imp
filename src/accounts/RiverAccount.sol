@@ -156,7 +156,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     // grant an address the ability to produce a valid signature
     // for a user op originating from the entry point
     function _requireFromEntryPointOrAdmin() internal view {
-        if (accessLevel[msg.sender] != 2 && msg.sender != address(this)) revert OnlyAdmin_Or_Entrypoint();
+        if (accessLevel[msg.sender] != 2 && msg.sender != address(entryPoint())) revert OnlyAdmin_Or_Entrypoint();
     }
 
     /// implement template method of BaseAccount
