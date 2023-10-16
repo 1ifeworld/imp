@@ -7,6 +7,7 @@ pragma solidity 0.8.21;
 contract NodeRegistry {
 
     event Registration(address indexed sender, uint256 indexed nodeId, bytes data);
+    
     event Message(address indexed sender, bytes message);
     event MessageWithIdSpecificNonce(address indexed sender, uint256 indexed nodeId, uint256 indexed nodeIdMessageCount, bytes message);
     event MessageWithGenericNonce(address indexed sender, uint256 indexed messageId, bytes message);
@@ -75,19 +76,3 @@ contract NodeRegistry {
         emit BatchMessageWithGenericNonce(msg.sender, datas);
     }      
 }
-
-/*
-just did a mini solidity exploration into what it would look like to:
-
-1. keep public counter of messages sent to specific nodeIds
-2. have the messageNode() function actually take in a target nodeId to allow us to easier support the identification of specific messages that are sent over time for provenance reasons. adds a bit of gas costs due to the resulting storage write needed to update the nonce, but is potential
-
-NodeRegistry.sol impl https://github.com/1ifeworld/river-contracts/blob/0xTranqui/231014-minimal-exploration/src/core/NodeRegistry.sol
-
-Tests with gas breakdown in comments https://github.com/1ifeworld/river-contracts/blob/0xTranqui/231014-minimal-exploration/test/NodeRegistry.t.sol
-
-general pros:
-
-*/
-
-
