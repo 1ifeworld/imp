@@ -1,38 +1,36 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
+
+import {Nonces} from "openzeppelin-contracts/utils/Nonces.sol";
+import {Signatures} from "./lib/Signatures.sol";
+import {EIP712} from "./lib/EIP712.sol";
+
+/*
+    Signatures, EIP712, and Nonces in place to add
+    Transfer + Recovery functionality
+*/
 
 /**
  * @title IdRegistry
  */
-contract IdRegistry {
+contract IdRegistry is Signatures, EIP712("name", "symbol"), Nonces  {
+    
+    error HasId();     
 
-    event Register(address indexed to, uint256 indexed id, address indexed delegate, address backup);
+    event Register(address indexed to, uint256 indexed id, address backup);
 
-    /// @dev Revert when the destination must be empty but has an rid.
-    error HasId();    
+    uint256 public idCounter;    
+    mapping(address => uint256) public idOwner;
+    mapping(uint256 => address) public idBackup;
 
-    uint256 public idCounter;
-    mapping(address => uint256) public idOwners;
-    mapping(uint256 => address) public idDelegates;
-    mapping(uint256 => address) public idBackups;
-
-    function register(address delegate, address backup) external returns (uint256 rid) {
-        // Cache msg.sender
+    function register(address backup) external returns (uint256 id) {
         address sender = msg.sender;
-
-        /* Revert if the target(to) has an rid */
-        if (idOwners[sender] != 0) revert HasId();
-
-        /* Safety: idCounter won't realistically overflow. */
+        if (idOwner[sender] != 0) revert HasId();
         unchecked {
-            /* Incrementing before assignment ensures that no one gets the 0 fid. */
-            rid = ++idCounter;
-        }        
-
-        // Assign rid + delegate + backup + emit for indexing
-        idOwners[sender] = rid;
-        idDelegates[rid] = delegate;
-        idBackups[rid] = backup;
-        emit Register(sender, rid, delegate, backup);        
+            id = ++idCounter;
+        }
+        idOwner[sender] = id;
+        idBackup[id] = backup;
+        emit Register(sender, id, backup);        
     }      
 }

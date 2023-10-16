@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.20;
+pragma solidity 0.8.21;
 
 /* solhint-disable avoid-low-level-calls */
 /* solhint-disable no-inline-assembly */
 /* solhint-disable reason-string */
 
 import "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
+import "openzeppelin-contracts/utils/cryptography/MessageHashUtils.sol";
 import "openzeppelin-contracts/proxy/utils/Initializable.sol";
 import "openzeppelin-contracts/proxy/utils/UUPSUpgradeable.sol";
 
@@ -29,11 +30,17 @@ import {TokenCallbackHandler} from "./utils/TokenCallbackHandler.sol";
         _validateSignature() function?
 */
 
+/*
+    can potentially change back to just `Account`, because in the test suite you could hardcode
+    in the import of `Account` test construct as `Account as AccountHelper` 
+*/
+
 /**
   * Based on ethinfitism `SimpleAccount.sol` implementation
   */
-contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Initializable {
-    using ECDSA for bytes32;
+contract Account is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Initializable {
+    using ECDSA for bytes32; // hash.recover
+    using MessageHashUtils for bytes32; // hash.toEthSignedMessageHash
 
     IEntryPoint private immutable _entryPoint;
 
@@ -41,7 +48,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     // NOTE: without an ddition
     mapping(address => uint256) public accessLevel;    
 
-    event RiverAccountInitialized(IEntryPoint indexed entryPoint, address indexed admin, address indexed delegate);
+    event AccountInitialized(IEntryPoint indexed entryPoint, address indexed admin, address indexed delegate);
     event AdminAdded(address indexed sender, address indexed admin);
     event ApprovalAdded(address indexed sender, address indexed target);
     event ApprovalRemoved(address indexed sender, address indexed target);
@@ -106,7 +113,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
 
     /**
      * @dev The _entryPoint member is immutable, to reduce gas consumption.  To upgrade EntryPoint,
-     * a new implementation of RiverAccount must be deployed with the new EntryPoint address, then upgrading
+     * a new implementation of Account must be deployed with the new EntryPoint address, then upgrading
       * the implementation by calling `upgradeTo()`
      */
     function initialize(address initialAdmin, address initialDelegate) public virtual initializer {
@@ -116,7 +123,7 @@ contract RiverAccount is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Ini
     function _initialize(address initialAdmin, address initialDelegate) internal virtual {
         accessLevel[initialAdmin] = 2;
         accessLevel[initialDelegate] = 1;
-        emit RiverAccountInitialized(_entryPoint, initialAdmin, initialDelegate);
+        emit AccountInitialized(_entryPoint, initialAdmin, initialDelegate);
     }
 
     function addAdmin(address admin) public virtual onlyAdmin {
