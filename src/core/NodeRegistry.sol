@@ -71,9 +71,10 @@ contract NodeRegistry is INodeRegistry {
      * @inheritdoc INodeRegistry
      */
     function registerNodeBatch(bytes[] calldata datas) external {    
+        address sender = msg.sender;
         for (uint256 i; i < datas.length; ) {
             // Increments nodeCount before event emission
-            emit Register(msg.sender, ++nodeCount, datas[i]);     
+            emit Register(sender, ++nodeCount, datas[i]);     
             // Cannot realistically overflow
             unchecked { ++i; }    
         }
@@ -95,9 +96,10 @@ contract NodeRegistry is INodeRegistry {
      * @inheritdoc INodeRegistry
      */
     function messageNodeBatch(bytes[] calldata datas) external {    
+        address sender = msg.sender;
         for (uint256 i; i < datas.length; ) {
             // Increments messageCount before event emission
-            emit Register(msg.sender, ++messageCount, datas[i]);     
+            emit Register(sender, ++messageCount, datas[i]);     
             // Cannot realistically overflow
             unchecked { ++i; }    
         }
