@@ -18,7 +18,7 @@ contract NodeRegistry is INodeRegistry {
      *
      *      NodeIds provide anchors for messaging schemes. It is recommended
      *      that all messaging schemes include nodeId as a field to provide
-     *      affective filtering of the entire data set produced by the registry
+     *      affective filtering of the entire data set produced via the registry
      *
      * @param sender        Address of the account calling `registerNode()`
      * @param nodeId        The nodeId being registered
@@ -106,4 +106,18 @@ contract NodeRegistry is INodeRegistry {
             unchecked { ++i; }    
         }
     }     
+
+    /* NOTE: IN PROGRESS/DRAFT/EXPLORATORY */
+
+    function registerNodeWithReturn(bytes calldata data) external returns (uint256 nodeId) {
+        // Increment nodeCount before event emission
+        nodeId = ++nodeCount;
+        emit Register(msg.sender, nodeId = ++nodeCount, data);        
+    }    
+
+    function messageNodeWithReturn(bytes calldata data) external returns (uint256 messageId) {
+        // Increment messageCount before event emission
+        messageId = ++messageCount;
+        emit Message(msg.sender, messageId, data);        
+    }        
 }
