@@ -16,7 +16,8 @@ contract NodeRegistryTest is Test {
     function setUp() public {
         nodeRegistry = new NodeRegistry();  
         nodeRegistry.registerNode(new bytes(0));
-        nodeRegistry.messageNodeWithNonce(mockNodeId, generateMockMessageDataWithNonce());
+        nodeRegistry.messageNodeWithIdSpecificNonce(mockNodeId, generateMockMessageDataWithNonce());
+        nodeRegistry.messageNodeWithGenericNonce(generateMockMessageData());
     }    
     /*
         Gas breakdown
@@ -49,21 +50,61 @@ contract NodeRegistryTest is Test {
         - third message (post setup, warm access, non zero => non zero write)
             - abi.encode(userId, schemaId, Pointers[]) = 6.31k                
     */    
-    function test_nonceBasedMessageNode() public {
+    function test_idSpecificNonceBasedMessageNode() public {
         vm.prank(user);
         uint256 mockUserId = 1;
         uint256 mockSchemaId = 1;        
-        nodeRegistry.messageNodeWithNonce(
+        nodeRegistry.messageNodeWithIdSpecificNonce(
             mockNodeId, 
             abi.encode(mockUserId, mockSchemaId, generatePointerArray())
         );        
-        nodeRegistry.messageNodeWithNonce(
+        nodeRegistry.messageNodeWithIdSpecificNonce(
             mockNodeId, 
             abi.encode(mockUserId, mockSchemaId, generatePointerArray())
         );                             
     }    
 
-    /* HELPERS */
+    /*
+        Gas breakdown
+        - first message (in setup, zero => non zero write)
+            - abi.encode(userId, nodeId, schemaId, Pointers[]) = 28.08k
+        - second message (post setup, cold access, non zero => non zero write)
+            - abi.encode(userId, nodeId, schemaId, Pointers[]) = 10.98k      
+        - third message (post setup, warm access, non zero => non zero write)
+            - abi.encode(userId, nodeId, schemaId, Pointers[]) = 6.180k                
+    */    
+    function test_genericNonceBasedMessageNode() public {
+        vm.prank(user);     
+        nodeRegistry.messageNodeWithGenericNonce(generateMockMessageData());        
+        nodeRegistry.messageNodeWithGenericNonce(generateMockMessageData());                                
+    }       
+
+    /*
+        Gas breakdown
+        - 100 messages (in setup, zero => non zero write)
+            - abi.encode(userId, nodeId, schemaId, ipfsUri) = 588.96k
+        *** rough cost of emitting same uri data in 100 unique 1155 tokens 10,000,000 gas
+    */
+    function test_genericNonceBasedv1BatchMessageNode() public {
+        vm.prank(user);     
+        nodeRegistry.batchMessageNodeWithGenericNonce_v1(generate100BatchMessageData());                                
+    }      
+
+    /*
+        Gas breakdown
+        - 100 messages (in setup, zero => non zero write)
+            - abi.encode(userId, nodeId, schemaId, ipfsUri) = 411.54k gas
+        *** rough cost of emitting same uri data in 100 unique 1155 tokens 10,000,000 gas
+    */
+    function test_genericNonceBasedv2BatchMessageNode() public {
+        vm.prank(user);     
+        nodeRegistry.batchMessageNodeWithGenericNonce_v2(generate100BatchMessageData());                                
+    }         
+
+    //////////////////////////////////////////////////
+    // HELPERS
+    //////////////////////////////////////////////////  
+
     struct Pointer {
         uint256 chainId;
         uint256 tokenId;
@@ -101,4 +142,15 @@ contract NodeRegistryTest is Test {
         uint256 mockSchemaId = 1;
         mockMessageData = abi.encode(mockUserId, mockSchemaId, generatePointerArray());        
     }       
+
+    function generate100BatchMessageData() public returns (bytes[] memory mockBatchMessageData) {
+        uint256 mockUserId = 1;
+        uint256 mockNodeId = 1;
+        uint256 mockSchemaId = 1;        
+        string memory mockUri = "ipfs://bafybeihax3e3suai6qrnjrgletfaqfzriziokl7zozrq3nh42df7u74jyu";
+        mockBatchMessageData = new bytes[](100);
+        for (uint256 i; i < 100; ++i) {
+            mockBatchMessageData[i] = abi.encode(mockUserId, mockNodeId, mockSchemaId, mockUri);
+        }
+    }
 }
