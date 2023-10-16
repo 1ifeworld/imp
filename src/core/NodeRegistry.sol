@@ -112,7 +112,7 @@ contract NodeRegistry is INodeRegistry {
     function registerNodeWithReturn(bytes calldata data) external returns (uint256 nodeId) {
         // Increment nodeCount before event emission
         nodeId = ++nodeCount;
-        emit Register(msg.sender, nodeId = ++nodeCount, data);        
+        emit Register(msg.sender, nodeId, data);        
     }    
 
     function messageNodeWithReturn(bytes calldata data) external returns (uint256 messageId) {
