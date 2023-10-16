@@ -101,7 +101,7 @@ contract NodeRegistry is INodeRegistry {
         address sender = msg.sender;
         for (uint256 i; i < datas.length; ) {
             // Increments messageCount before event emission
-            emit Register(sender, ++messageCount, datas[i]);     
+            emit Message(sender, ++messageCount, datas[i]);     
             // Cannot realistically overflow
             unchecked { ++i; }    
         }
