@@ -71,6 +71,7 @@ contract NodeRegistry is INodeRegistry {
      * @inheritdoc INodeRegistry
      */
     function registerNodeBatch(bytes[] calldata datas) external {    
+        // Cache msg.sender
         address sender = msg.sender;
         for (uint256 i; i < datas.length; ) {
             // Increments nodeCount before event emission
@@ -96,6 +97,7 @@ contract NodeRegistry is INodeRegistry {
      * @inheritdoc INodeRegistry
      */
     function messageNodeBatch(bytes[] calldata datas) external {    
+        // Cache msg.sender
         address sender = msg.sender;
         for (uint256 i; i < datas.length; ) {
             // Increments messageCount before event emission
