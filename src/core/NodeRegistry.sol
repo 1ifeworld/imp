@@ -15,6 +15,10 @@ contract NodeRegistry {
     // Nonce-esque nodeId specific message tracker
     mapping(uint256 => uint256) public nodeIdMessageCount;
 
+    //////////////////////////////////////////////////
+    // NODE REGISTRATION
+    //////////////////////////////////////////////////    
+
     // Increments nodeCount and emits generic data/instructions for use in 
     //      offchain node registration systems
     function registerNode(bytes memory data) external {
@@ -22,6 +26,12 @@ contract NodeRegistry {
         emit Registration(msg.sender, ++nodeCount, data);        
     }
 
+    //////////////////////////////////////////////////
+    // NODE MESSAGING
+    //////////////////////////////////////////////////  
+
+    // Emits generic data/instructions for use in 
+    //      offchain message processing systems
     function messageNode(bytes memory data) external {
         emit Message(msg.sender, data);
     }        
