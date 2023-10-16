@@ -36,7 +36,7 @@ contract NodeRegistry is INodeRegistry {
      *      `OFFCHAIN_MSG_SCHEMA.MD` for an example of structuring the data field
      *
      * @param sender        Address of the account calling `messageNode()`
-     * @param messageId        The messageId being generated
+     * @param messageId     The messageId being generated
      * @param data          Data to transmit in the message
      */
     event Message(address indexed sender, uint256 indexed messageId, bytes data);
