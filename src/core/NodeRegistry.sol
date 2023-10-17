@@ -5,7 +5,7 @@ import {INodeRegistry} from "./interfaces/INodeRegistry.sol";
 
 /**
  * @title NodeRegistry
- * @author Lifeworld, Co.
+ * @author Lifeworld
  */
 contract NodeRegistry is INodeRegistry {
 
@@ -16,7 +16,7 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @dev Emit an event when a new node is registered
      *
-     *      NodeIds provide anchors for messaging schemes. It is recommended
+     *      NodeIds provide targets for messaging schemes. It is recommended
      *      that all messaging schemes include nodeId as a field to provide
      *      affective filtering of the entire data set produced via the registry
      *
@@ -62,20 +62,25 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    function registerNode(bytes calldata data) external {
+    function registerNode(bytes calldata data) external returns (uint256 nodeId) {
         // Increments nodeCount before event emission
-        emit Register(msg.sender, ++nodeCount, data);        
+        nodeId = ++nodeCount;
+        emit Register(msg.sender, ++nodeId, data);        
     }
 
     /**
      * @inheritdoc INodeRegistry
      */
-    function registerNodeBatch(bytes[] calldata datas) external {    
+    function registerNodeBatch(bytes[] calldata datas) external returns (uint256[] memory nodeIds) {    
         // Cache msg.sender
         address sender = msg.sender;
+        // Assign return data length
+        nodeIds = new uint256[](datas.length);
         for (uint256 i; i < datas.length; ) {
+            // Copy nodeId to return variable
+            nodeIds[i] = ++nodeCount;
             // Increments nodeCount before event emission
-            emit Register(sender, ++nodeCount, datas[i]);     
+            emit Register(sender, nodeIds[i], datas[i]);     
             // Cannot realistically overflow
             unchecked { ++i; }    
         }
@@ -88,36 +93,27 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    function messageNode(bytes calldata data) external {
+    function messageNode(bytes calldata data) external returns (uint256 messageId) {
         // Increments messageCount before event emission
-        emit Message(msg.sender, ++messageCount, data);
+        messageId = ++messageCount;
+        emit Message(msg.sender, messageId, data);
     }         
 
     /**
      * @inheritdoc INodeRegistry
      */
-    function messageNodeBatch(bytes[] calldata datas) external {    
+    function messageNodeBatch(bytes[] calldata datas) external returns (uint256[] memory messageIds) {    
         // Cache msg.sender
         address sender = msg.sender;
+        // Assign return data length
+        messageIds = new uint256[](datas.length);
         for (uint256 i; i < datas.length; ) {
-            // Increments messageCount before event emission
-            emit Message(sender, ++messageCount, datas[i]);     
+            // Increment messageCount and copy to return variable
+            messageIds[i] = ++messageCount; 
+            // Emit Message event
+            emit Message(sender, messageIds[i], datas[i]);     
             // Cannot realistically overflow
             unchecked { ++i; }    
         }
-    }     
-
-    /* NOTE: IN PROGRESS/DRAFT/EXPLORATORY */
-
-    function registerNodeWithReturn(bytes calldata data) external returns (uint256 nodeId) {
-        // Increment nodeCount before event emission
-        nodeId = ++nodeCount;
-        emit Register(msg.sender, nodeId, data);        
-    }    
-
-    function messageNodeWithReturn(bytes calldata data) external returns (uint256 messageId) {
-        // Increment messageCount before event emission
-        messageId = ++messageCount;
-        emit Message(msg.sender, messageId, data);        
-    }        
+    }         
 }

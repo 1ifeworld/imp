@@ -170,7 +170,6 @@ contract NodeRegistryTest is Test {
         }
     }
 
-
     function generateEmptyData(uint256 quantity) public pure returns (bytes[] memory batchData) {                   
         batchData = new bytes[](quantity);
         for (uint256 i; i < quantity; ++i) {

@@ -24,16 +24,16 @@ interface INodeRegistry {
      * @notice Register a new node by incrementing the nodeCount and emitting data
      *      in association with the registration event. Callable by anyone.
      *
-     * @param data Data to associate with registration event
+     * @param data      Data to associate with Register event
      */
-    function registerNode(bytes calldata data) external;
+    function registerNode(bytes calldata data) external returns (uint256 nodeId);
 
     /**
      * @notice Batch version of `registerNode`
      *
-     * @param datas Data to associate with registration events
+     * @param datas     Data to associate with Register events
      */
-    function registerNodeBatch(bytes[] calldata datas) external;
+    function registerNodeBatch(bytes[] calldata datas) external returns (uint256[] memory nodeIds);
 
     //////////////////////////////////////////////////
     // NODE MESSAGING
@@ -43,14 +43,14 @@ interface INodeRegistry {
      * @notice Message a node by incrementing the messageCount and emitting data
      *      in association with the message event. Callable by anyone.
      *
-     * @param data Data to associate with message event
+     * @param data      Data to associate with Message event
      */
-    function messageNode(bytes calldata data) external;
+    function messageNode(bytes calldata data) external returns (uint256 nodeId);
 
     /**
      * @notice Batch version of `messageNode`
      *
-     * @param datas Data to associate with message events
+     * @param datas     Data to associate with Message events
      */
-    function messageNodeBatch(bytes[] calldata datas) external;
+    function messageNodeBatch(bytes[] calldata datas) external returns (uint256[] memory nodeIds);
 }
