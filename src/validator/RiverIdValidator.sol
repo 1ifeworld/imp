@@ -60,7 +60,7 @@ contract RiverIdValidator  {
         // Check if sender is riverNetSigner
         if (msg.sender != riverNetSigner) revert Untrusted_Validator();
         // Check if from timestamp is before current timestamp
-        if (start <= block.timestamp) revert Invalid_Timestamp();
+        if (start < block.timestamp) revert Invalid_Timestamp();
         if (duration < secondsPerMonth) revert Invalid_Duration();
         // Emit validation event for target id
         emit Validate(id, start, duration);      
