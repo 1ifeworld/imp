@@ -30,16 +30,13 @@ contract RiverIdValidator  {
      *      NOTE: add description
      *
      * @param id            Id being validated
-     * @param start         Starting timestamp from which id is valid
-     * @param duration      Period of time that id will remain valid
      */
-    event Validate(uint256 id, uint256 start, uint256 duration);
+    event Validate(uint256 id);
 
     //////////////////////////////////////////////////
     // STORAGE
     //////////////////////////////////////////////////        
 
-    uint256 public constant secondsPerMonth = 2678400;
     IdRegistry public immutable idRegistry;
     address public immutable riverNetSigner;
 
@@ -56,13 +53,12 @@ contract RiverIdValidator  {
     // ID VALIDATION
     //////////////////////////////////////////////////    
 
-    function validateTrusted(uint256 id, uint256 start, uint256 duration) external {
+    // Note: this has bery basic logic because we know we will be deprecating
+    // this Validator in the near term
+    function validateTrusted(uint256 id) external {
         // Check if sender is riverNetSigner
         if (msg.sender != riverNetSigner) revert Untrusted_Validator();
-        // Check if from timestamp is before current timestamp
-        if (start < block.timestamp) revert Invalid_Timestamp();
-        if (duration < secondsPerMonth) revert Invalid_Duration();
         // Emit validation event for target id
-        emit Validate(id, start, duration);      
+        emit Validate(id);      
     }
 }

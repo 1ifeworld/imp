@@ -7,6 +7,11 @@ interface INodeRegistry {
     //////////////////////////////////////////////////
 
     /**
+     * @notice Provides entropy for nodeSchema registrations
+     */
+    function nodeSchemaEntropy() external view returns (uint256 count);    
+
+    /**
      * @notice Tracks number of nodes registered
      */
     function nodeCount() external view returns (uint256 count);
@@ -17,7 +22,27 @@ interface INodeRegistry {
     function messageCount() external view returns (uint256 count);
 
     //////////////////////////////////////////////////
-    // NODE REGISTRATION
+    // NODE SCHEMA REGISTRATION
+    //////////////////////////////////////////////////    
+
+    /**
+     * @notice Register a new nodeSchema by incrementing the nodeEntropy and emitting a
+     *      unique hash. These hashes can be used to anchor schemas for nodeIds. Callable by anyone
+     *
+     * @param data        Data to associate with RegisterNodeSchema event
+     */
+    function registerNodeSchema(bytes calldata data) external returns (bytes32 nodeSchema);    
+
+    /**
+     * @notice Register a new nodeSchema by incrementing the nodeEntropy and emitting a
+     *      unique hash. These hashes can be used to anchor schemas for nodeIds. Callable by anyone
+     *
+     * @param datas        Data to associate with RegisterNodeSchema events
+     */
+    function registerNodeSchemaBatch(bytes[] calldata datas) external returns (bytes32[] memory nodeSchemas);  
+
+    //////////////////////////////////////////////////
+    // NODE ID REGISTRATION
     //////////////////////////////////////////////////
 
     /**

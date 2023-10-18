@@ -5,6 +5,11 @@ import {Test, console2} from "forge-std/Test.sol";
 
 import {NodeRegistry} from "../src/core/NodeRegistry.sol";
 
+/*
+    NOTE:
+    MISSING nodeSchemaRegistration tests
+*/
+
 contract NodeRegistryTest is Test {
     /* Constants */
     address mockUserAccount = address(0x123);
