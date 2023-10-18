@@ -5,7 +5,7 @@ import {IdRegistry} from "../core/IdRegistry.sol";
 
 /**
  * @title RiverIdValidator
- * @author Lifeworld.
+ * @author Lifeworld
  */
 contract RiverIdValidator  {
 
@@ -13,12 +13,8 @@ contract RiverIdValidator  {
     // ERRORS
     //////////////////////////////////////////////////   
 
-    /// @dev Revert when the Validate caller is not riverNetsigner
-    error Untrusted_Validator();    
-    /// @dev Revert when designated start time is before current block.timestamp
-    error Invalid_Timestamp();
-    /// @dev Revert when designated duration is shorter than one month
-    error Invalid_Duration();
+    /// @dev Revert when the Validate caller is not riverNetSigner
+    error Only_RiverSigner();    
 
     //////////////////////////////////////////////////
     // EVENTS
@@ -37,15 +33,13 @@ contract RiverIdValidator  {
     // STORAGE
     //////////////////////////////////////////////////        
 
-    IdRegistry public immutable idRegistry;
     address public immutable riverNetSigner;
 
     //////////////////////////////////////////////////
     // CONSTRUCTOR
     //////////////////////////////////////////////////      
 
-    constructor(address _idRegistry, address _riverNetSigner) {
-        idRegistry = IdRegistry(_idRegistry);
+    constructor(address _riverNetSigner) {
         riverNetSigner = _riverNetSigner;
     }
 
@@ -57,7 +51,7 @@ contract RiverIdValidator  {
     // this Validator in the near term
     function validateTrusted(uint256 id) external {
         // Check if sender is riverNetSigner
-        if (msg.sender != riverNetSigner) revert Untrusted_Validator();
+        if (msg.sender != riverNetSigner) revert Only_RiverSigner();
         // Emit validation event for target id
         emit Validate(id);      
     }
