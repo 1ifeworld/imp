@@ -68,9 +68,9 @@ contract DelegateRegistry {
         // Cache msg.sender
         address sender = msg.sender;
         // Check if sender is id custody address
-        if (idRegistry.idOwners(sender) != id) revert Only_Id_Owner();
+        if (idRegistry.idOwnedBy(sender) != id) revert Only_Id_Owner();
         // Retrieve current transfer nonce for id
-        uint256 idTransferNonce = idRegistry.idTransferCount(id);
+        uint256 idTransferNonce = idRegistry.transferCountForId(id);
         // Delegate to target for given id + transfer nonce
         idDelegates[id][idTransferNonce][target] = true;
         emit Delegate(id, idTransferNonce, target);
@@ -80,15 +80,15 @@ contract DelegateRegistry {
         // Cache msg.sender
         address sender = msg.sender;
         // Check if sender is id custody address
-        if (idRegistry.idOwners(sender) != id) revert Only_Id_Owner();       
+        if (idRegistry.idOwnedBy(sender) != id) revert Only_Id_Owner();       
         // Retrieve current transfer nonce for id
-        uint256 idTransferNonce = idRegistry.idTransferCount(id); 
+        uint256 idTransferNonce = idRegistry.transferCountForId(id); 
         // Remove delegation from target for given id + transfer nonce
         idDelegates[id][idTransferNonce][target] = false;
         emit DelegateRemoved(id, idTransferNonce, target);                
     }
 
     function isDelegate(uint256 id, address target) external view returns (bool delegateStatus) {
-        delegateStatus = idDelegates[id][idRegistry.idTransferCount(id)][target];
+        delegateStatus = idDelegates[id][idRegistry.transferCountForId(id)][target];
     }
 }

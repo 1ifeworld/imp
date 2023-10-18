@@ -9,17 +9,17 @@ interface INodeRegistry {
     /**
      * @notice Provides entropy for nodeSchema registrations
      */
-    function nodeSchemaEntropy() external view returns (uint256 count);    
+    function nodeSchemaEntropy() external view returns (uint256);    
 
     /**
      * @notice Tracks number of nodes registered
      */
-    function nodeCount() external view returns (uint256 count);
+    function nodeCount() external view returns (uint256);
 
     /**
      * @notice Tracks number of messages sent
      */
-    function messageCount() external view returns (uint256 count);
+    function messageCount() external view returns (uint256);
 
     //////////////////////////////////////////////////
     // NODE SCHEMA REGISTRATION
@@ -39,7 +39,7 @@ interface INodeRegistry {
      *
      * @param datas        Data to associate with RegisterNodeSchema events
      */
-    function registerNodeSchemaBatch(bytes[] calldata datas) external returns (bytes32[] memory nodeSchemas);  
+    function registerNodeSchemaBatch(bytes[] calldata datas) external returns (bytes32[] memory);  
 
     //////////////////////////////////////////////////
     // NODE ID REGISTRATION
