@@ -5,7 +5,7 @@ import {IIdRegistry} from "./interfaces/IIdRegistry.sol";
 
 /**
  * @title IdRegistry
- * @author Lifeworld.
+ * @author Lifeworld
  */
 contract IdRegistry is IIdRegistry {
 
@@ -28,8 +28,9 @@ contract IdRegistry is IIdRegistry {
      * @param to            Address of the account calling `registerNode()`
      * @param id            The id being registered
      * @param backup        Address assigned as a backup for the given id
+     * @param data          Data to be associated with registration of id
      */
-    event Register(address indexed to, uint256 indexed id, address backup);
+    event Register(address indexed to, uint256 indexed id, address backup, bytes data);
 
     //////////////////////////////////////////////////
     // STORAGE
@@ -57,18 +58,15 @@ contract IdRegistry is IIdRegistry {
     /**
      * @inheritdoc IIdRegistry
      */
-    function register(bytes memory data) external returns (uint256 id) {
+    function register(address backup, bytes calldata data) external returns (uint256 id) {
         // Cache msg.sender
         address sender = msg.sender;        
-        // Decode registration data
-        address backup = abi.decode(data, (address));
         // Revert if the sender already has an id
         if (idOwners[sender] != 0) revert HasId();    
         // Increments id and assign owner
-        // Safety: idCounter won't realistically overflow (could add unchecked)
         idOwners[sender] = id = ++idCount;
         // Assign backup for id
         idBackups[id] = backup;
-        emit Register(sender, id, backup);        
+        emit Register(sender, id, backup, data);        
     }
 }

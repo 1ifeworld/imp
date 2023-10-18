@@ -28,9 +28,10 @@ interface IIdRegistry {
     /**
      * @notice Register a new id by incrementing the idCount. Callable by anyone.
      *
-     * @param data        Bytes passed into register call
+     * @param backup      Address to set as backup for id
+     * @param data        Aribtary data to emit in Register event
      */
-    function register(bytes memory data) external returns (uint256 id);
+    function register(address backup, bytes memory data) external returns (uint256 id);
 
     //////////////////////////////////////////////////
     // ID TRANSFER
