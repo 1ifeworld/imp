@@ -3,23 +3,38 @@ pragma solidity 0.8.21;
 
 interface IIdRegistry {
     //////////////////////////////////////////////////
+    // TYPES
+    //////////////////////////////////////////////////
+
+    /**
+     *  @notice State of id transfer
+     *
+     *  @param from     Address initiating transfer
+     *  @param to       Address specified as transfer recipient
+     */
+    struct PendingTransfer {
+        address from;
+        address to;
+    }
+
+    //////////////////////////////////////////////////
     // STORAGE
     //////////////////////////////////////////////////
 
     /**
      * @notice Tracks number of ids registered
      */
-    function idCount() external view returns (uint256 count);    
+    function idCount() external view returns (uint256 count);
 
     /**
      * @notice Tracks id registered to a given account
      */
-    function idOwners(address account) external view returns (uint256 id);    
+    function idOwners(address account) external view returns (uint256 id);
 
     /**
      * @notice Tracks backup address registered to a given id
      */
-    function idBackups(uint256 id) external view returns (address backup);        
+    function idBackups(uint256 id) external view returns (address backup);
 
     //////////////////////////////////////////////////
     // ID REGISTRATION
@@ -35,9 +50,9 @@ interface IIdRegistry {
 
     //////////////////////////////////////////////////
     // ID TRANSFER
-    //////////////////////////////////////////////////    
+    //////////////////////////////////////////////////
 
     //////////////////////////////////////////////////
     // ID RECOVERY
-    //////////////////////////////////////////////////        
+    //////////////////////////////////////////////////
 }
