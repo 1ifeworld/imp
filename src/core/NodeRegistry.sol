@@ -47,11 +47,11 @@ contract NodeRegistry is INodeRegistry {
      * @param sender        Address of the account calling `registerNode()`
      * @param id            Id to be associated with call
      * @param nodeId        NodeId being registered
-     * @param nodeType      Type of node being registered
+     * @param nodeSchema      Type of node being registered
      * @param data          Data to associate with the registration of a new nodeId
      */
     event RegisterNode(
-        address sender, uint256 indexed id, uint256 indexed nodeId, bytes32 indexed nodeType, bytes data
+        address sender, uint256 indexed id, uint256 indexed nodeId, bytes32 indexed nodeSchema, bytes data
     );
 
     /**
@@ -130,23 +130,23 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    function registerNode(uint256 id, bytes32 nodeType, bytes calldata data) external returns (uint256 nodeId) {
+    function registerNode(uint256 id, bytes32 nodeSchema, bytes calldata data) external returns (uint256 nodeId) {
         // Increments nodeCount before event emission
         nodeId = ++nodeCount;
-        emit RegisterNode(msg.sender, id, nodeId, nodeType, data);
+        emit RegisterNode(msg.sender, id, nodeId, nodeSchema, data);
     }
 
     /**
      * @inheritdoc INodeRegistry
      */
-    function registerNodeBatch(uint256 id, bytes32[] calldata nodeTypes, bytes[] calldata datas)
+    function registerNodeBatch(uint256 id, bytes32[] calldata nodeSchemas, bytes[] calldata datas)
         external
         returns (uint256[] memory nodeIds)
     {
         // Cache msg.sender
         address sender = msg.sender;
-        // Cache nodeTypes length
-        uint256 quantity = nodeTypes.length;
+        // Cache nodeSchemas length
+        uint256 quantity = nodeSchemas.length;
         // Check input lengths
         if (quantity != datas.length) revert Array_Length_Mismatch();
         // Assign return data length
@@ -155,7 +155,7 @@ contract NodeRegistry is INodeRegistry {
             // Copy nodeId to return variable
             nodeIds[i] = ++nodeCount;
             // Increments nodeCount before event emission
-            emit RegisterNode(sender, id, nodeIds[i], nodeTypes[i], datas[i]);
+            emit RegisterNode(sender, id, nodeIds[i], nodeSchemas[i], datas[i]);
             // Cannot realistically overflow
             unchecked { ++i; }
         }
