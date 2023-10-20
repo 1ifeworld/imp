@@ -98,7 +98,7 @@ contract RiverValidatorV1 {
     }
 
     /**
-     * @notice Batch version of `valiate`
+     * @notice Batch version of `validate()`
      *
      * @param ids           Numeric ids to validate
      * @param statuses      T/F statuses to assign to ids
