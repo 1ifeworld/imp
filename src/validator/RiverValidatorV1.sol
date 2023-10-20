@@ -74,7 +74,7 @@ contract RiverValidatorV1 {
     /**
      * @notice Update operator address
      *
-     * @param operator        Address to set as riverOperator
+     * @param operator      Address to set as riverOperator
      */  
     function updateOperator(address operator) onlyOperator external {        
         // Assign new operator and emit for indexing     
