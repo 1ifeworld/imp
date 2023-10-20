@@ -119,6 +119,15 @@ contract Account is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Initiali
     }
 
     //////////////////////////////////////////////////
+    // CONSTRUCTOR
+    //////////////////////////////////////////////////      
+
+    constructor(IEntryPoint anEntryPoint) {
+        _entryPoint = anEntryPoint;
+        _disableInitializers();
+    }    
+
+    //////////////////////////////////////////////////
     // FUNCTIONS
     //////////////////////////////////////////////////      
 
@@ -129,11 +138,6 @@ contract Account is BaseAccount, TokenCallbackHandler, UUPSUpgradeable, Initiali
 
     // solhint-disable-next-line no-empty-blocks
     receive() external payable {}
-
-    constructor(IEntryPoint anEntryPoint) {
-        _entryPoint = anEntryPoint;
-        _disableInitializers();
-    }
 
     function _onlyOwner() internal view {
         // directly from account owner, or through the account itself (which gets redirected through execute())

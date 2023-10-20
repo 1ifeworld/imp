@@ -76,7 +76,7 @@ interface INodeRegistry {
 
     /**
      * @notice Message a node by incrementing the messageCount and emitting data
-     *      in association with the message event. Callable by anyone.
+     *      in association with a given id, nodeId, and message event. Callable by anyone.
      *
      * @param id        Id to associate with Message event
      * @param nodeId    NodeId to associate with Message event

@@ -27,7 +27,7 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @dev Emit an event when a new nodeSchema is registered
      *
-     *      nodeSchemas are unique schema identifiers that nodeIds declare as upon registration
+     *      NodeSchemas are unique schema identifiers that nodeIds declare as upon registration
      *      NodeIds that are reigstered without providing an existing nodeSchema will be considered invalid
      *
      * @param sender        Address of the account calling `registerNodeSchema()`
@@ -50,9 +50,7 @@ contract NodeRegistry is INodeRegistry {
      * @param nodeSchema      Type of node being registered
      * @param data          Data to associate with the registration of a new nodeId
      */
-    event RegisterNode(
-        address sender, uint256 indexed id, uint256 indexed nodeId, bytes32 indexed nodeSchema, bytes data
-    );
+    event RegisterNode(address sender, uint256 indexed id, uint256 indexed nodeId, bytes32 indexed nodeSchema, bytes data);
 
     /**
      * @dev Emit an event when a new message is sent
