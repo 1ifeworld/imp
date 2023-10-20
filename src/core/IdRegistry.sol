@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL 3.0
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.21;
 
 import {IIdRegistry} from "./interfaces/IIdRegistry.sol";
@@ -8,6 +8,8 @@ import {IIdRegistry} from "./interfaces/IIdRegistry.sol";
  * @author Lifeworld
  */
 contract IdRegistry is IIdRegistry {
+
+    // TODO: Add in trusted recovery functionality
 
     //////////////////////////////////////////////////
     // ERRORS
@@ -32,7 +34,7 @@ contract IdRegistry is IIdRegistry {
     /**
      * @dev Emit an event when a new id is registered
      *
-     *      NOTE: add description
+     *      Ids are unique identifiers that can be registered to an address an neve repeat
      *
      * @param to            Address of the account calling `registerNode()`
      * @param id            The id being registered
@@ -44,24 +46,27 @@ contract IdRegistry is IIdRegistry {
     /**
      * @dev Emit an event when an id transfer is initiated
      *
-     *      NOTE: add params + description
-     *      
+     * @param from      Where the id is being transfered from
+     * @param to        The destination of id if transfer is completed
+     * @param id        The id being transfered
      */
     event TransferInitiated(address indexed from, address indexed to, uint256 indexed id);    
 
     /**
      * @dev Emit an event when an id transfer is cancelled
      *
-     *      NOTE: add params + description
-     *      
+     * @param from      Where the id is being transfered from
+     * @param to        The destination of id if transfer is completed
+     * @param id        The id being transfered
      */
     event TransferCancelled(address indexed from, address indexed to, uint256 indexed id);     
 
     /**
      * @dev Emit an event when an id is transferred
      *
-     *      NOTE: add params + description
-     *      
+     * @param from      Where the id is being transfered from
+     * @param to        The destination of id if transfer is completed
+     * @param id        The id being transfered
      */
     event TransferComplete(address indexed from, address indexed to, uint256 indexed id);
 
@@ -192,7 +197,7 @@ contract IdRegistry is IIdRegistry {
         // Clear pendingTransfer storage for given id
         delete pendingTransfers[id];
         // Emit event for indexing
-        emit TransferComplete({from: from, to: to, id: id});
+        emit TransferComplete(from, to, id);
     }
 
     //////////////////////////////////////////////////

@@ -1,13 +1,14 @@
-// SPDX-License-Identifier: AGPL 3.0
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.21;
 
+import {IDelegateRegistry} from "./interfaces/IDelegateRegistry.sol";
 import {IdRegistry} from "./IdRegistry.sol";
 
 /**
  * @title DelegateRegistry
  * @author Lifeworld
  */
-contract DelegateRegistry {
+contract DelegateRegistry is IDelegateRegistry {
 
     //////////////////////////////////////////////////
     // ERRORS
@@ -21,50 +22,73 @@ contract DelegateRegistry {
     //////////////////////////////////////////////////    
 
     /**
+     * @dev Emit an event when a new nodeSchema is registered
+     *
+     *      NodeSchemas are unique identifiers that nodeIds declare as upon registration
+     *      NodeIds that are reigstered without providing an existing nodeSchema will be considered invalid
+     *
+     * @param sender        Address of the account calling `registerNodeSchema()`
+     * @param id            Id to associate with call
+     * @param nodeSchema    The unique nodeSchema being registered
+     * @param data          Data to associate with the registration of a new nodeSchema
+     */
+    event RegisterNodeSchema(address indexed sender, uint256 indexed id, bytes32 indexed nodeSchema, bytes data);    
+
+    /**
      * @dev Emit an event when an id grants a delegation
      *
-     *      NOTE: add description
+     *      Id owners can toggle the delegation status of any address to act on its behalf.
+     *      When an id is transferred, it increments a transferNonce for the given id
+     *      that effectively clears all existing delegates for that id.
+     *      Delegations can then be made again by the new id owners
      *
      * @param id            The id granting delegation
      * @param nonce         The current transfer nonce of id
      * @param target        Address receiving delegation
+     * @param status        T/F of delegation status
      */
-    event Delegate(uint256 indexed id, uint256 nonce, address indexed target);
-
-    /**
-     * @dev Emit an event when an id removes a delegation
-     *
-     *      NOTE: consider merging both delegate events into one with a true/false flag param
-     *      NOTE: add description
-     *
-     * @param id            The id removing delegation
-     * @param nonce         The current transfer nonce of id
-     * @param target        Address losing delegation
-     */
-    event DelegateRemoved(uint256 indexed id, uint256 nonce, address indexed target);    
+    event Delegate(uint256 indexed id, uint256 nonce, address indexed target, bool status); 
 
     //////////////////////////////////////////////////
     // CONSTRUCTOR
     //////////////////////////////////////////////////         
 
+    /**
+     * @notice Specify address of idRegistry
+     *
+     * @param _idRegistry IdRegistry address.
+     *
+     */
     constructor(address _idRegistry) {
         idRegistry = IdRegistry(_idRegistry);
     }
 
     //////////////////////////////////////////////////
+    // CONSTANTS
+    //////////////////////////////////////////////////   
+
+    /**
+     * @inheritdoc IDelegateRegistry
+     */
+    IdRegistry immutable public idRegistry;
+
+    //////////////////////////////////////////////////
     // STORAGE
     //////////////////////////////////////////////////        
 
-    IdRegistry immutable public idRegistry;
-
-    // id => transferNonce => account => T/F delegate value
+    /**
+     * @inheritdoc IDelegateRegistry
+     */    
     mapping(uint256 => mapping(uint256 => mapping(address => bool))) public idDelegates;
 
     //////////////////////////////////////////////////
     // ID DELEGATION
     //////////////////////////////////////////////////    
 
-    function delegate(uint256 id, address target) external {
+    /**
+     * @inheritdoc IDelegateRegistry
+     */
+    function updateDelegate(uint256 id, address target, bool status) external {
         // Cache msg.sender
         address sender = msg.sender;
         // Check if sender is id custody address
@@ -72,22 +96,13 @@ contract DelegateRegistry {
         // Retrieve current transfer nonce for id
         uint256 idTransferNonce = idRegistry.transferCountForId(id);
         // Delegate to target for given id + transfer nonce
-        idDelegates[id][idTransferNonce][target] = true;
-        emit Delegate(id, idTransferNonce, target);
+        idDelegates[id][idTransferNonce][target] = status;
+        emit Delegate(id, idTransferNonce, target, status);
     }
 
-    function removeDelegation(uint256 id, address target) external {
-        // Cache msg.sender
-        address sender = msg.sender;
-        // Check if sender is id custody address
-        if (idRegistry.idOwnedBy(sender) != id) revert Only_Id_Owner();       
-        // Retrieve current transfer nonce for id
-        uint256 idTransferNonce = idRegistry.transferCountForId(id); 
-        // Remove delegation from target for given id + transfer nonce
-        idDelegates[id][idTransferNonce][target] = false;
-        emit DelegateRemoved(id, idTransferNonce, target);                
-    }
-
+    /**
+     * @inheritdoc IDelegateRegistry
+     */
     function isDelegate(uint256 id, address target) external view returns (bool delegateStatus) {
         delegateStatus = idDelegates[id][idRegistry.transferCountForId(id)][target];
     }
