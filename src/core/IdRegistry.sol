@@ -231,7 +231,9 @@ contract IdRegistry is IIdRegistry {
 
     error HasAttested();       
     error NonexistentId();       
-    error InvalidSignature();       
+    error InvalidSignature();    
+
+    event Attest(uint256 indexed id, address indexed attestor);   
 
     mapping(address => uint256) public attestedBy;    
     mapping(address => mapping(uint256 => uint256)) attestedByWithNonce;
@@ -252,29 +254,34 @@ contract IdRegistry is IIdRegistry {
            Privy EOA which is the signer for their smart account that will execute the transation
            *** because its a userOp, we can cover the gas for this
 
+        NOTE: took out the hash.toEthSignedMessage() on the hash input. tests now passing
+                but may have just introduced a 
+
     */
-    function attest(address optionalSmartSigner, bytes32 hash, bytes calldata signature) external {
+    function attest(bytes32 hash, bytes calldata signature, address contractSignerOverride) external {
         // Cache custodyAddress aka msg.sender
         address custodyAddress = msg.sender;
         // Reterieve id for custody address
-        uint256 id = idOwnedBy[custodyAddress];  
-        // Generate hash for check via recover
-        bytes32 messsageHash = hash.toEthSignedMessageHash();        
-        // Attempt to recover attestor address
-        address attestor = messsageHash.recover(signature);    
-        // Check if address was recovered successfuly
-        // If attestor != address(0), it was a valid signature. Now check they havent already attested elsewhere
-        if (attestor != address(0)) {
+        uint256 id = idOwnedBy[custodyAddress];      
+        // Check if contractSigner override is present
+        if (contractSignerOverride == address(0)) {
+            // Attempt to recover attestor address from EOA signature
+            address attestor = hash.recover(signature);    
+            // Now check they havent already attested elsewhere
             if (attestedBy[attestor] != 0) revert HasAttested();
             // Store attestation
             attestedBy[attestor] = id;
+            emit Attest(id, attestor);
         } else {
-            // If attestor == address(0), address wasnt successfuly ecdsa receovered, attempt ERC1271 signature verification
-            if (!SignatureChecker.isValidERC1271SignatureNow(optionalSmartSigner, messsageHash, signature)) revert InvalidSignature();
+            // constractSignerOverride was present, attempt ERC1271 signature verification
+            if (!SignatureChecker.isValidERC1271SignatureNow(contractSignerOverride, hash, signature)) revert InvalidSignature();
             // Store attestation
-            attestedBy[optionalSmartSigner] = id;
+            attestedBy[contractSignerOverride] = id;
+            emit Attest(id, contractSignerOverride);
         } 
     }
+
+    // function revokeAttestation(); *** should be able to be called directly by attestor permissionlessly
 
 
 //         // // // Check for valid signature

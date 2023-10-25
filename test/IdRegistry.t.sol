@@ -3,39 +3,41 @@ pragma solidity 0.8.21;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {IdRegistry} from "../src/core/IdRegistry.sol";
-
-// import {EntryPoint} from "light-account/lib/account-abstraction/contracts/core/EntryPoint.sol";
+import {ECDSA} from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
+import {IERC1271} from "openzeppelin-contracts/interfaces/IERC1271.sol";
+import {EntryPoint} from "light-account/lib/account-abstraction/contracts/core/EntryPoint.sol";
 import {LightAccount} from "light-account/src/LightAccount.sol";
-// import {LightAccountFactory} from "light-account/src/LightAccountFactory.sol";
+import {LightAccountFactory} from "light-account/src/LightAccountFactory.sol";
+
+import {IdRegistry} from "../src/core/IdRegistry.sol";
 
 contract IdRegistryTest is Test {       
 
     //////////////////////////////////////////////////
-    // CONSTANTS
+    // CONSTANTS (??? not actually constants)
     //////////////////////////////////////////////////   
-
-    address mockUserAccount = address(0x123);
-    uint256 mockUserId = 1;
-    uint256 mockNodeId = 1;    
-    bytes32 mockNodeSchema = keccak256(abi.encode(1));
-    string mockUri = "ipfs://bafybeihax3e3suai6qrnjrgletfaqfzriziokl7zozrq3nh42df7u74jyu";
-    bytes32 mockMerkleRoot = 0x86c29b38b8e59d3d08913796a5f1eeaefa01125ee2a61fdfd3aeffdcfe6180e1;
-    bytes zeroBytes = new bytes(0);
+    bytes4 public constant EIP1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
+    address public constant mockRegisterBackup = address(0x123);
+    bytes public constant zeroBytes = new bytes(0);
 
     //////////////////////////////////////////////////
     // PARAMETERS
-    //////////////////////////////////////////////////   
+    //////////////////////////////////////////////////  
+
+    /* Actors */
+    Account public eoa_owner;
+    Account public eoa_attestor;
+    Account public eoa_malicious;     
 
     /* IMP infra */
     IdRegistry public idRegistry;
 
     /* Smart account infra */
-    // EntryPoint public entryPoint;
-    // LightAccount public account;
-    // LightAccount public contractOwnedAccount;
-    // uint256 public salt = 1;
-
+    EntryPoint public entryPoint;
+    LightAccount public account;
+    LightAccount public account2;
+    LightAccount public contractOwnedAccount;
+    uint256 public salt = 1;
 
     //////////////////////////////////////////////////
     // SETUP
@@ -43,16 +45,79 @@ contract IdRegistryTest is Test {
 
     // Set-up called before each test
     function setUp() public {
-        // entryPoint = new EntryPoint();
-        // LightAccountFactory factory = new LightAccountFactory(entryPoint);
-        // account = factory.createAccount(eoaAddress, salt);
+        eoa_owner = makeAccount("owner");
+        eoa_attestor = makeAccount("attestor");
+        eoa_malicious = makeAccount("malicious");
+
+        idRegistry = new IdRegistry();
+
+        entryPoint = new EntryPoint();
+        LightAccountFactory factory = new LightAccountFactory(entryPoint);
+
+        account = factory.createAccount(eoa_owner.addr, salt);
+        account2 = factory.createAccount(eoa_attestor.addr, salt);
     }    
 
     //////////////////////////////////////////////////
-    // REGISTER NODE TESTS
-    ////////////////////////////////////////////////// 
+    // ID REGISTER TESTS
+    //////////////////////////////////////////////////   
+
+    function test_register() public {
+        // prank into eoa that is the owner of light account
+        vm.startPrank(eoa_owner.addr); 
+        // call `execute` on light account, passing in instructions to call `register` on idRegistry from light account 
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (mockRegisterBackup, zeroBytes)));
+        require(idRegistry.idCount() == 1, "id count not incremented correctly");
+        require(idRegistry.idOwnedBy(address(account)) == 1, "id 1 not registered correctly");
+    }
+
+    function test_EOA_attest() public {
+        vm.startPrank(eoa_owner.addr); 
+        // Register id 1 to 
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (mockRegisterBackup, zeroBytes)));
+
+        // Generate digest + signature for attest call
+        bytes32 digest = keccak256("attest_digest");
+        bytes memory signature = _sign(eoa_attestor.key, digest);
+
+        // Call attest function, passing in signature from other keypair the user has access to
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(0))));   
+
+        require(idRegistry.attestedBy(eoa_attestor.addr) == 1, "attestation done incorrectly");     
+    }
+
+    function test_SmartAccount_attest() public {
+        vm.startPrank(eoa_owner.addr); 
+        // Register id 1 to 
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (mockRegisterBackup, zeroBytes)));
+
+        // Generate digest + signature for attest call
+        bytes32 digest = keccak256("attest_digest");
+        bytes memory signature = _sign(eoa_attestor.key, digest);
+
+        // Call attest function, passing in signature from other keypair the user has access to, which happens
+        //      to be the owner of the second smart account that the owner of the first smart account wnats to
+        //      verify ownership of for attest
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(account2))));        
+    }    
 
     //////////////////////////////////////////////////
-    // HELPERS
+    // ID ATTESTATION TESTS
+    //////////////////////////////////////////////////     
+
+    // Tests if light account works properly
+    function testIsValidSignatureForEoaOwner() public {
+        bytes32 digest = keccak256("digest");
+        bytes memory signature = _sign(eoa_owner.key, digest);
+        assertEq(account.isValidSignature(digest, signature), EIP1271_MAGIC_VALUE);
+    }    
+
+    //////////////////////////////////////////////////
+    // HELPERS FROM ALCHEMY -- LIGHT ACCOUNT TESTS
     //////////////////////////////////////////////////  
+
+    function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        return abi.encodePacked(r, s, v);
+    }
 }
