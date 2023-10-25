@@ -2,7 +2,7 @@
 pragma solidity 0.8.21;
 
 import {IIdRegistry} from "./interfaces/IIdRegistry.sol";
-import "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
+import {ECDSA} from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
 
 /**
@@ -198,6 +198,8 @@ contract IdRegistry is IIdRegistry {
         ++transferCountForId[id];
         // Clear pendingTransfer storage for given id
         delete pendingTransfers[id];
+        // Clear existing attestation for id if relevant
+        _unsafeAttemptRevokeAttestation(id);
         // Emit event for indexing
         emit TransferComplete(from, to, id);
     }
@@ -220,87 +222,74 @@ contract IdRegistry is IIdRegistry {
     // ID ATTESTATION
     //////////////////////////////////////////////////            
 
-    // NOTE: allow addresses to attest they are controlled by the same 
-    //      user who is in custody of an Id
-
-    // Must be submitted by id owner
-    // Passing in signature of the account they are trying to attest for
-
-    using ECDSA for bytes32; // hash.recover() + has.ethSignedMessagehash()
-    // using MessageHashUtils for bytes32; // hash.toEthSignedMessageHash()      
+    using ECDSA for bytes32; // hash.recover() + has.ethSignedMessagehash() 
 
     error HasAttested();       
     error NonexistentId();       
     error InvalidSignature();    
+    error Not_Attestor();    
 
     event Attest(uint256 indexed id, address indexed attestor);   
+    event RevokeAttestation(uint256 indexed id, address indexed attestor);   
 
     mapping(address => uint256) public attestedBy;    
-    mapping(address => mapping(uint256 => uint256)) attestedByWithNonce;
+    mapping(uint256 => address) public attestedFor;
 
-    // This function msut be called by the smart account that owns the id
-    // In terms of evoking this call correctly
-    /*
-
-        1. User completes OTP auth into their smart account that owns id #x
-        2. User optionally decides to sign-in with their EOA/other smart wallet that owns ENS (ex: gnosis)
-           via WalletConnect or other wallet provider
-        3. User fills in input field for ENS they would like to link to their id
-           If their ENS is registered to a smart account, this is when we can get this value
-           to pass into the attest function
-        3. River prompts user to generate a signature. This is a standard sign method for EOAs,
-           slightly unclear what this would be if users connect via multisig (I think should be the same)
-        4. River generates a userOp for the custody address of the id, which gets signed by the users
-           Privy EOA which is the signer for their smart account that will execute the transation
-           *** because its a userOp, we can cover the gas for this
-
-        NOTE: took out the hash.toEthSignedMessage() on the hash input. tests now passing
-                but may have just introduced a 
-
-    */
+    // NOTE: allow addresses to attest they are controlled by the same 
+    //      user who is in custody of an Id
+    // NOTE: Must be submitted by id owner
+    // NOTE: Passing in signature of the account they are trying to attest for
     function attest(bytes32 hash, bytes calldata signature, address contractSignerOverride) external {
-        // Cache custodyAddress aka msg.sender
-        address custodyAddress = msg.sender;
-        // Reterieve id for custody address
-        uint256 id = idOwnedBy[custodyAddress];      
+        // Cache msg.sender. 
+        address sender = msg.sender;
+        // Reterieve id for sender address
+        uint256 id = idOwnedBy[sender];      
         // Check if contractSigner override is present
         if (contractSignerOverride == address(0)) {
             // Attempt to recover attestor address from EOA signature
             address attestor = hash.recover(signature);    
-            // Now check they havent already attested elsewhere
+            // Check they havent already attested for another id
             if (attestedBy[attestor] != 0) revert HasAttested();
-            // Store attestation
+            // Store attestation - double storage so that attestations can be automtically cleared on id trasnfers
             attestedBy[attestor] = id;
+            attestedFor[id] = attestor;
             emit Attest(id, attestor);
         } else {
             // constractSignerOverride was present, attempt ERC1271 signature verification
             if (!SignatureChecker.isValidERC1271SignatureNow(contractSignerOverride, hash, signature)) revert InvalidSignature();
-            // Store attestation
+            // Check they havent already attested for another id
+            if (attestedBy[contractSignerOverride] != 0) revert HasAttested();            
+            // Store attestation - double storage so that attestations can be automtically cleared on id trasnfers
             attestedBy[contractSignerOverride] = id;
+            attestedFor[id] = contractSignerOverride;
             emit Attest(id, contractSignerOverride);
         } 
     }
 
-    // function revokeAttestation(); *** should be able to be called directly by attestor permissionlessly
+    // Revoke Attestation callable by anyone
+    function reovkeAttestation(uint256 id) external {
+        // Cache msg.sender
+        address sender = msg.sender;
+        // Revert if sender is not attestor for target id
+        if (sender != attestedFor[id]) revert Not_Attestor();
+        // Clear storage for attestations
+        delete attestedFor[id];
+        delete attestedBy[sender];
+        // Emit for indexing
+        emit RevokeAttestation(id, sender);
+    }        
 
-
-//         // // // Check for valid signature
-//         // // if (!SignatureChecker.isValidSignatureNow(sender, hash, digest)) revert InvalidSignature();
-//         // // Cache sender address
-//         // address sender = msg.sender;
-//         // // Fetch id for sender
-//         // if ()
-//         // // Revert if target id has already been attested for
-//         // if (id > idCount) revert NonexistentId();
-//         // // Revert if sender has already attested for an existing id
-//         // if (attestedBy[sender] != 0) revert HasAttested();
-
-//    function verifyFidSignature(
-//         address custodyAddress,
-//         uint256 fid,
-//         bytes32 digest,
-//         bytes calldata sig
-//     ) external view returns (bool isValid) {
-//         isValid = idOf[custodyAddress] == fid && SignatureChecker.isValidSignatureNow(custodyAddress, digest, sig);
-//     }
+    // Revoke Attestation function without invariant checks. Must Enforce elsewhere
+    function _unsafeAttemptRevokeAttestation(uint256 id) internal {
+        // Retrieve attestor address
+        address attestor = attestedFor[id];
+        // If attestor != address(0), clear storage and emit revoke event
+        if (attestor != address(0)) {
+            // Clear storage for attestations
+            delete attestedFor[id];
+            delete attestedBy[attestor];
+            // Emit for indexing
+            emit RevokeAttestation(id, attestor);
+        }
+    }
 }
