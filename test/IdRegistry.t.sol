@@ -7,7 +7,7 @@ import {IdRegistry} from "../src/core/IdRegistry.sol";
 
 // import {EntryPoint} from "light-account/lib/account-abstraction/contracts/core/EntryPoint.sol";
 // import {LightAccount} from "light-account/src/LightAccount.sol";
-import {LightAccountFactory} from "light-account/src/LightAccountFactory.sol";
+// import {LightAccountFactory} from "light-account/src/LightAccountFactory.sol";
 
 contract IdRegistryTest is Test {       
 
