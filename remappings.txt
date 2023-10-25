@@ -3,4 +3,3 @@ openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contr
 openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/
 solady/=lib/solady/src/
 solmate/=lib/solmate/src/
-light-account/=lib/light-account/

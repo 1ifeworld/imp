@@ -13,6 +13,3 @@
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/transmissions11/solmate
-[submodule "lib/light-account"]
-	path = lib/light-account
-	url = https://github.com/alchemyplatform/light-account
