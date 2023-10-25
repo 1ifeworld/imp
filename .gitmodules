@@ -19,3 +19,6 @@
 [submodule "lib/account-abstraction"]
 	path = lib/account-abstraction
 	url = https://github.com/eth-infinitism/account-abstraction
+[submodule "lib/light-account"]
+	path = lib/light-account
+	url = https://github.com/alchemyplatform/light-account
