@@ -11,7 +11,12 @@ import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/Signat
  */
 contract IdRegistry is IIdRegistry {
 
-    // TODO: Add in trusted recovery functionality
+    //////////////////////////////////////////////////
+    // CUSTOMIZATION
+    //////////////////////////////////////////////////  
+
+    /// @notice Adds hash.recover() functionality
+    using ECDSA for bytes32;
 
     //////////////////////////////////////////////////
     // ERRORS
@@ -28,6 +33,15 @@ contract IdRegistry is IIdRegistry {
 
     /// @dev Revert when caller is not designated transfer initiator
     error Not_Transfer_Initiator();
+
+    /// @dev Revert when address has already attested for another id
+    error Has_Attested();        
+
+    /// @dev Revert when invalid signature is passed into `attest()` function
+    error Invalid_Signature();    
+
+    /// @dev Revert when account calls `revokeAttestation` with no active attesatation
+    error No_Active_Attestation();  
 
     //////////////////////////////////////////////////
     // EVENTS
@@ -72,6 +86,22 @@ contract IdRegistry is IIdRegistry {
      */
     event TransferComplete(address indexed from, address indexed to, uint256 indexed id);
 
+    /**
+     * @dev Emit an event when an id is attested for
+     *
+     * @param id        Id being attested for
+     * @param attestor  Address attesting
+     */
+    event Attest(uint256 indexed id, address indexed attestor);
+
+    /**
+     * @dev Emit an event when an id attestion is revoked
+     *
+     * @param id        Id who's attestation is getting revoked
+     * @param attestor  Address who's attestation is getting revoked
+     */
+    event RevokeAttestation(uint256 indexed id, address indexed attestor);    
+
     //////////////////////////////////////////////////
     // STORAGE
     //////////////////////////////////////////////////        
@@ -102,6 +132,16 @@ contract IdRegistry is IIdRegistry {
      * @custom:param id     Numeric id
      */
     mapping(uint256 => PendingTransfer) public pendingTransfers;
+
+    /**
+     * @inheritdoc IIdRegistry
+     */      
+    mapping(address => uint256) public attestedBy;    
+
+    /**
+     * @inheritdoc IIdRegistry
+     */      
+    mapping(uint256 => address) public attestedFor;    
 
     //////////////////////////////////////////////////
     // VIEWS
@@ -198,8 +238,8 @@ contract IdRegistry is IIdRegistry {
         ++transferCountForId[id];
         // Clear pendingTransfer storage for given id
         delete pendingTransfers[id];
-        // Clear existing attestation for id if relevant
-        _unsafeAttemptRevokeAttestation(id);
+        // Clear existing attestation for id, if applicable
+        _unsafeRevokeAttestation(id);
         // Emit event for indexing
         emit TransferComplete(from, to, id);
     }
@@ -220,74 +260,62 @@ contract IdRegistry is IIdRegistry {
 
     //////////////////////////////////////////////////
     // ID ATTESTATION
-    //////////////////////////////////////////////////            
+    //////////////////////////////////////////////////                
 
-    using ECDSA for bytes32; // hash.recover() + has.ethSignedMessagehash() 
-
-    error HasAttested();       
-    error NonexistentId();       
-    error InvalidSignature();    
-    error Not_Attestor();    
-
-    event Attest(uint256 indexed id, address indexed attestor);   
-    event RevokeAttestation(uint256 indexed id, address indexed attestor);   
-
-    mapping(address => uint256) public attestedBy;    
-    mapping(uint256 => address) public attestedFor;
-
-    // NOTE: allow addresses to attest they are controlled by the same 
-    //      user who is in custody of an Id
-    // NOTE: Must be submitted by id owner
-    // NOTE: Passing in signature of the account they are trying to attest for
-    function attest(bytes32 hash, bytes calldata signature, address contractSignerOverride) external {
+    /**
+     * @inheritdoc IIdRegistry
+     */     
+    function attest(bytes32 hash, bytes calldata sig, address signerOverride) external {
         // Cache msg.sender. 
         address sender = msg.sender;
         // Reterieve id for sender address
         uint256 id = idOwnedBy[sender];      
-        // Check if contractSigner override is present
-        if (contractSignerOverride == address(0)) {
+        // Check if signerOveride for erc1271 contract account sig verification is present
+        if (signerOverride == address(0)) {
             // Attempt to recover attestor address from EOA signature
-            address attestor = hash.recover(signature);    
+            address attestor = hash.recover(sig);    
             // Check they havent already attested for another id
-            if (attestedBy[attestor] != 0) revert HasAttested();
+            if (attestedBy[attestor] != 0) revert Has_Attested();
             // Store attestation - double storage so that attestations can be automtically cleared on id trasnfers
             attestedBy[attestor] = id;
             attestedFor[id] = attestor;
             emit Attest(id, attestor);
         } else {
-            // constractSignerOverride was present, attempt ERC1271 signature verification
-            if (!SignatureChecker.isValidERC1271SignatureNow(contractSignerOverride, hash, signature)) revert InvalidSignature();
+            // signerOveride was present, attempt ERC1271 signature verification
+            if (!SignatureChecker.isValidERC1271SignatureNow(signerOverride, hash, sig)) revert Invalid_Signature();
             // Check they havent already attested for another id
-            if (attestedBy[contractSignerOverride] != 0) revert HasAttested();            
+            if (attestedBy[signerOverride] != 0) revert Has_Attested();            
             // Store attestation - double storage so that attestations can be automtically cleared on id trasnfers
-            attestedBy[contractSignerOverride] = id;
-            attestedFor[id] = contractSignerOverride;
-            emit Attest(id, contractSignerOverride);
+            attestedBy[signerOverride] = id;
+            attestedFor[id] = signerOverride;
+            emit Attest(id, signerOverride);
         } 
     }
 
     // Revoke Attestation callable by anyone
-    function reovkeAttestation(uint256 id) external {
+    function revokeAttestation() external {
         // Cache msg.sender
         address sender = msg.sender;
-        // Revert if sender is not attestor for target id
-        if (sender != attestedFor[id]) revert Not_Attestor();
+        // Retrieve attested id, if applicable
+        uint256 id = attestedBy[sender];
+        // Revert if id = 0;
+        if (id == 0) revert No_Active_Attestation();
         // Clear storage for attestations
-        delete attestedFor[id];
         delete attestedBy[sender];
+        delete attestedFor[id];
         // Emit for indexing
         emit RevokeAttestation(id, sender);
     }        
 
     // Revoke Attestation function without invariant checks. Must Enforce elsewhere
-    function _unsafeAttemptRevokeAttestation(uint256 id) internal {
-        // Retrieve attestor address
+    function _unsafeRevokeAttestation(uint256 id) internal {
+        // Retrieve attestor address, if applicable
         address attestor = attestedFor[id];
         // If attestor != address(0), clear storage and emit revoke event
         if (attestor != address(0)) {
             // Clear storage for attestations
-            delete attestedFor[id];
             delete attestedBy[attestor];
+            delete attestedFor[id];
             // Emit for indexing
             emit RevokeAttestation(id, attestor);
         }

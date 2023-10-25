@@ -71,7 +71,11 @@ contract IdRegistryTest is Test {
         require(idRegistry.idOwnedBy(address(account)) == 1, "id 1 not registered correctly");
     }
 
-    function test_EOA_attest() public {
+    //////////////////////////////////////////////////
+    // ID ATTEST TESTS
+    //////////////////////////////////////////////////       
+
+    function test_eoaAttest() public {
         vm.startPrank(eoa_owner.addr); 
         // Register id 1 to 
         account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (mockRegisterBackup, zeroBytes)));
@@ -86,7 +90,7 @@ contract IdRegistryTest is Test {
         require(idRegistry.attestedBy(eoa_attestor.addr) == 1, "attestation done incorrectly");     
     }
 
-    function test_SmartAccount_attest() public {
+    function test_smartAccountAttest() public {
         vm.startPrank(eoa_owner.addr); 
         // Register id 1 to 
         account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (mockRegisterBackup, zeroBytes)));
@@ -100,6 +104,21 @@ contract IdRegistryTest is Test {
         //      verify ownership of for attest
         account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(account2))));        
     }    
+
+    function test_Revert_AlreadyAttested_eoaAttest() public {
+        vm.startPrank(eoa_owner.addr); 
+        // Register id 1 to account
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (mockRegisterBackup, zeroBytes)));
+        // Generate digest + signature for attest call
+        bytes32 digest = keccak256("attest_digest");
+        bytes memory signature = _sign(eoa_attestor.key, digest);
+        // Call attest function, passing in signature from other keypair the user has access to
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(0))));  
+        // Should revert because attestor has already attested for this id
+        vm.expectRevert();
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(0))));   
+        // TODO: add more scenarios when the attest call should revert (ex: for an id with no active attestor)
+    }        
 
     //////////////////////////////////////////////////
     // ID ATTESTATION TESTS

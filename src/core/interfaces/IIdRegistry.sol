@@ -46,6 +46,16 @@ interface IIdRegistry {
      */
     function transferPendingForId(uint256 id) external view returns (PendingTransfer memory);    
 
+    /**
+     * @notice Tracks id attested for by a given account
+     */      
+    function attestedBy(address attestor) external view returns (uint256);      
+
+    /**
+     * @notice Tracks attestor address for a given id
+     */      
+    function attestedFor(uint256 id) external view returns (address);       
+
     //////////////////////////////////////////////////
     // ID REGISTRATION
     //////////////////////////////////////////////////
@@ -95,4 +105,19 @@ interface IIdRegistry {
     //////////////////////////////////////////////////
     // ID RECOVERY
     //////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////
+    // ID ATTESTATION
+    //////////////////////////////////////////////////
+
+    /**
+     * @notice  Allows id owner to prove they are in control of another account
+     * @dev     Can only be called by id owner
+     * @dev     Hash MUST be the result of a keccack256 operation or risks vulnerability
+     *  
+     * @param hash           Hashed digest for sig verification process
+     * @param sig            Signed message for sig verification process
+     * @param signerOverride Optional override to allow contract accounts to submit attestations
+     */    
+    function attest(bytes32 hash, bytes calldata sig, address signerOverride) external;
 }

@@ -105,11 +105,9 @@ contract RiverValidatorV1 {
      */  
     function validateBatch(uint256[] memory ids, bool[] calldata statuses) onlyOperator external {
         if (ids.length != statuses.length) revert Array_Length_Mismatch();
-        for (uint256 i; i < ids.length; ) {
+        for (uint256 i; i < ids.length; ++i) {
             // Emit validation event for target id
             emit Validate(ids[i], statuses[i]); 
-            // Cannot realsiticall overflow     
-            unchecked { ++i; }
         }
     }    
 }

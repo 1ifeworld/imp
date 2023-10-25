@@ -3,6 +3,8 @@ pragma solidity 0.8.21;
 
 import {INodeRegistry} from "./interfaces/INodeRegistry.sol";
 
+// TODO: Bump to 0.8.22
+
 /**
  * @title NodeRegistry
  * @author Lifeworld
@@ -111,13 +113,11 @@ contract NodeRegistry is INodeRegistry {
         address sender = msg.sender;
         // Assign return data length
         nodeSchemas = new bytes32[](datas.length);
-        for (uint256 i; i < datas.length;) {
+        for (uint256 i; i < datas.length; ++i) {
             // Increments nodeSchemaEntropy before hash generation
             nodeSchemas[i] = keccak256(abi.encode(block.chainid, address(this), ++nodeSchemaEntropy));
             // Emit for indexing
             emit RegisterNodeSchema(sender, id, nodeSchemas[i], datas[i]);
-            // Cannot realistically overflow
-            unchecked { ++i; }
         }
     }
 
@@ -149,13 +149,11 @@ contract NodeRegistry is INodeRegistry {
         if (quantity != datas.length) revert Array_Length_Mismatch();
         // Assign return data length
         nodeIds = new uint256[](quantity);
-        for (uint256 i; i < quantity;) {
+        for (uint256 i; i < quantity; ++i) {
             // Copy nodeId to return variable
             nodeIds[i] = ++nodeCount;
             // Increments nodeCount before event emission
             emit RegisterNode(sender, id, nodeIds[i], nodeSchemas[i], datas[i]);
-            // Cannot realistically overflow
-            unchecked { ++i; }
         }
     }
 
@@ -187,13 +185,11 @@ contract NodeRegistry is INodeRegistry {
         if (quantity != datas.length) revert Array_Length_Mismatch();
         // Assign return data length
         messageIds = new uint256[](quantity);
-        for (uint256 i; i < quantity;) {
+        for (uint256 i; i < quantity; ++i) {
             // Increment messageCount and copy to return variable
             messageIds[i] = ++messageCount;
             // Emit Message event
             emit Message(sender, id, nodeIds[i], messageIds[i], datas[i]);
-            // Cannot realistically overflow
-            unchecked { ++i; }
         }
     }
 }
