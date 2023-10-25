@@ -2,6 +2,9 @@
 pragma solidity 0.8.21;
 
 import {IIdRegistry} from "./interfaces/IIdRegistry.sol";
+import "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
+import "openzeppelin-contracts/utils/cryptography/MessageHashUtils.sol";
+import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
 
 /**
  * @title IdRegistry
@@ -213,4 +216,85 @@ contract IdRegistry is IIdRegistry {
         also need to add in a "change backup address" function,
         potentially with similar transfer nonce pattern
     */
+
+    //////////////////////////////////////////////////
+    // ID ATTESTATION
+    //////////////////////////////////////////////////            
+
+    // NOTE: allow addresses to attest they are controlled by the same 
+    //      user who is in custody of an Id
+
+    // Must be submitted by id owner
+    // Passing in signature of the account they are trying to attest for
+
+    using ECDSA for bytes32; // hash.recover()
+    using MessageHashUtils for bytes32; // hash.toEthSignedMessageHash()      
+
+    error HasAttested();       
+    error NonexistentId();       
+    error InvalidSignature();       
+
+    mapping(address => uint256) public attestedBy;    
+    mapping(address => mapping(uint256 => uint256)) attestedByWithNonce;
+
+    // This function msut be called by the smart account that owns the id
+    // In terms of evoking this call correctly
+    /*
+
+        1. User completes OTP auth into their smart account that owns id #x
+        2. User optionally decides to sign-in with their EOA/other smart wallet that owns ENS (ex: gnosis)
+           via WalletConnect or other wallet provider
+        3. User fills in input field for ENS they would like to link to their id
+           If their ENS is registered to a smart account, this is when we can get this value
+           to pass into the attest function
+        3. River prompts user to generate a signature. This is a standard sign method for EOAs,
+           slightly unclear what this would be if users connect via multisig (I think should be the same)
+        4. River generates a userOp for the custody address of the id, which gets signed by the users
+           Privy EOA which is the signer for their smart account that will execute the transation
+           *** because its a userOp, we can cover the gas for this
+
+    */
+    function attest(address optionalSmartSigner, bytes32 hash, bytes calldata signature) external {
+        // Cache custodyAddress aka msg.sender
+        address custodyAddress = msg.sender;
+        // Reterieve id for custody address
+        uint256 id = idOwnedBy[custodyAddress];  
+        // Generate hash for check via recover
+        bytes32 messsageHash = hash.toEthSignedMessageHash();        
+        // Attempt to recover attestor address
+        address attestor = messsageHash.recover(signature);    
+        // Check if address was recovered successfuly
+        // If attestor != address(0), it was a valid signature. Now check they havent already attested elsewhere
+        if (attestor != address(0)) {
+            if (attestedBy[attestor] != 0) revert HasAttested();
+            // Store attestation
+            attestedBy[attestor] = id;
+        } else {
+            // If attestor == address(0), address wasnt successfuly ecdsa receovered, attempt ERC1271 signature verification
+            if (!SignatureChecker.isValidERC1271SignatureNow(optionalSmartSigner, messsageHash, signature)) revert InvalidSignature();
+            // Store attestation
+            attestedBy[optionalSmartSigner] = id;
+        } 
+    }
+
+
+//         // // // Check for valid signature
+//         // // if (!SignatureChecker.isValidSignatureNow(sender, hash, digest)) revert InvalidSignature();
+//         // // Cache sender address
+//         // address sender = msg.sender;
+//         // // Fetch id for sender
+//         // if ()
+//         // // Revert if target id has already been attested for
+//         // if (id > idCount) revert NonexistentId();
+//         // // Revert if sender has already attested for an existing id
+//         // if (attestedBy[sender] != 0) revert HasAttested();
+
+//    function verifyFidSignature(
+//         address custodyAddress,
+//         uint256 fid,
+//         bytes32 digest,
+//         bytes calldata sig
+//     ) external view returns (bool isValid) {
+//         isValid = idOf[custodyAddress] == fid && SignatureChecker.isValidSignatureNow(custodyAddress, digest, sig);
+//     }
 }
