@@ -3,7 +3,6 @@ pragma solidity 0.8.21;
 
 import {IIdRegistry} from "./interfaces/IIdRegistry.sol";
 import "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
-import "openzeppelin-contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
 
 /**
@@ -227,8 +226,8 @@ contract IdRegistry is IIdRegistry {
     // Must be submitted by id owner
     // Passing in signature of the account they are trying to attest for
 
-    using ECDSA for bytes32; // hash.recover()
-    using MessageHashUtils for bytes32; // hash.toEthSignedMessageHash()      
+    using ECDSA for bytes32; // hash.recover() + has.ethSignedMessagehash()
+    // using MessageHashUtils for bytes32; // hash.toEthSignedMessageHash()      
 
     error HasAttested();       
     error NonexistentId();       
