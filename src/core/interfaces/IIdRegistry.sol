@@ -106,6 +106,8 @@ interface IIdRegistry {
     // ID RECOVERY
     //////////////////////////////////////////////////
 
+    /// TODO: Missing
+
     //////////////////////////////////////////////////
     // ID ATTESTATION
     //////////////////////////////////////////////////
@@ -120,4 +122,11 @@ interface IIdRegistry {
      * @param signerOverride Optional override to allow contract accounts to submit attestations
      */    
     function attest(bytes32 hash, bytes calldata sig, address signerOverride) external;
+
+    /**
+     * @notice  Revokes any existing attestation from a given account
+     * @dev     Reverts if no existing attestation for msg.sender
+     * @dev     Callable by anyine
+     */    
+    function revokeAttestation() external;
 }

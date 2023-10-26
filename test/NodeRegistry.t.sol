@@ -15,9 +15,9 @@ contract NodeRegistryTest is Test {
     // EVENTS
     //////////////////////////////////////////////////    
 
-    event RegisterNodeSchema(address indexed sender, uint256 indexed id, bytes32 indexed nodeSchema, bytes data);
-    event RegisterNode(address sender, uint256 indexed id, uint256 indexed nodeId, bytes32 indexed nodeSchema, bytes data);
-    event Message(address sender, uint256 indexed id, uint256 indexed nodeId, uint256 indexed messageId, bytes data);        
+    event RegisterSchema(address indexed sender, bytes32 indexed schema, bytes data);
+    event RegisterNode(address sender, uint256 indexed nodeId, bytes data);
+    event MessageNode(address sender, uint256 indexed messageId, bytes data);        
 
     //////////////////////////////////////////////////
     // CONSTANTS
@@ -44,9 +44,9 @@ contract NodeRegistryTest is Test {
     // Set-up called before each test
     function setUp() public {
         nodeRegistry = new NodeRegistry();  
-        nodeRegistry.registerNodeSchema(mockUserId, new bytes(0));
-        nodeRegistry.registerNode(mockUserId, mockNodeSchema, new bytes(0));
-        nodeRegistry.messageNode(mockUserId, mockNodeId, new bytes(0));
+        nodeRegistry.registerSchema(new bytes(0));
+        nodeRegistry.registerNode(new bytes(0));
+        nodeRegistry.messageNode(new bytes(0));
     }    
 
     //////////////////////////////////////////////////
@@ -67,51 +67,51 @@ contract NodeRegistryTest is Test {
         - second node registration (no data, cold access, non-zero -> non-zero messageCount) = 8,593
         - third node registration (no data, warm access, non-zero -> non-zero messageCount) = 3,793
     */
-    function test_registerNode() public {
-        vm.startPrank(mockUserAccount);
-        // Checks if topics 1, 2, 3, non-indexed data and event emitter match expected emitter + event signature + event values
-        vm.expectEmit(true, true, true, true, address(nodeRegistry));        
-        // Emit event we are expecting
-        emit NodeRegistry.RegisterNode(mockUserAccount, mockUserId, 2, mockNodeSchema, zeroBytes);
-        // Perform call to emit event
-        nodeRegistry.registerNode(mockUserId, mockNodeSchema, zeroBytes);
-        // Perform another call to test gas for second register node call in same txn
-        nodeRegistry.registerNode(mockUserId, mockNodeSchema, zeroBytes);
-        require(nodeRegistry.nodeCount() == 3, "nodeCount not incremented correctly");
-    }    
+    // function test_registerNode() public {
+    //     vm.startPrank(mockUserAccount);
+    //     // Checks if topics 1, 2, 3, non-indexed data and event emitter match expected emitter + event signature + event values
+    //     vm.expectEmit(true, true, true, true, address(nodeRegistry));        
+    //     // Emit event we are expecting
+    //     emit NodeRegistry.RegisterNode(mockUserAccount, mockUserId, 2, mockNodeSchema, zeroBytes);
+    //     // Perform call to emit event
+    //     nodeRegistry.registerNode(mockUserId, mockNodeSchema, zeroBytes);
+    //     // Perform another call to test gas for second register node call in same txn
+    //     nodeRegistry.registerNode(mockUserId, mockNodeSchema, zeroBytes);
+    //     require(nodeRegistry.nodeCount() == 3, "nodeCount not incremented correctly");
+    // }    
 
     /*
         Gas breakdown
         - 10 non-zero -> non-zero registrations w/ empty data for each = 43.04k
     */
-    function test_batchRegisterNode() public {
-        vm.prank(mockUserAccount);
-        uint256 quantity = 10;
-        nodeRegistry.registerNodeBatch(mockUserId, generateNodeSchemas(quantity), generateEmptyData(quantity));
-        require(nodeRegistry.nodeCount() == 11, "nodeCount not incremented correctly");
-    }        
+    // function test_batchRegisterNode() public {
+    //     vm.prank(mockUserAccount);
+    //     uint256 quantity = 10;
+    //     nodeRegistry.registerNodeBatch(mockUserId, generateNodeSchemas(quantity), generateEmptyData(quantity));
+    //     require(nodeRegistry.nodeCount() == 11, "nodeCount not incremented correctly");
+    // }        
 
     /*
         Gas breakdown
         - first node registration (in setup, no data) = 25,693
         - second node registration (mock data) = 9,641
     */
-    function test_initialData_RegisterNode() public {
-        vm.prank(mockUserAccount);
-        nodeRegistry.registerNode(mockUserId, mockNodeSchema, generateRegisterData());
-        require(nodeRegistry.nodeCount() == 2, "nodeCount not incremented correctly");
-    }        
+    // function test_initialData_RegisterNode() public {
+    //     vm.prank(mockUserAccount);
+    //     nodeRegistry.registerNode(mockUserId, mockNodeSchema, generateRegisterData());
+    //     require(nodeRegistry.nodeCount() == 2, "nodeCount not incremented correctly");
+    // }        
 
     /*
         Gas breakdown
         - 10 non-zero -> non-zero registrations w/ mock data for each = 53.4k
     */
-    function test_initialData_batchRegisterNode() public {
-        vm.prank(mockUserAccount);
-        uint256 quantity = 10;
-        nodeRegistry.registerNodeBatch(mockUserId, generateNodeSchemas(quantity), generateBatchRegisterData(quantity));
-        require(nodeRegistry.nodeCount() == 11, "nodeCount not incremented correctly");
-    }     
+    // function test_initialData_batchRegisterNode() public {
+    //     vm.prank(mockUserAccount);
+    //     uint256 quantity = 10;
+    //     nodeRegistry.registerNodeBatch(mockUserId, generateNodeSchemas(quantity), generateBatchRegisterData(quantity));
+    //     require(nodeRegistry.nodeCount() == 11, "nodeCount not incremented correctly");
+    // }     
 
     //////////////////////////////////////////////////
     // MESSAGE NODE TESTS

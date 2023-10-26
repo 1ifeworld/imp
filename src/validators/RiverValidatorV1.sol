@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.21;
 
+/// TODO: bump to sol 0.8.22
+
 /**
  * @title RiverValidatorV1
  * @author Lifeworld

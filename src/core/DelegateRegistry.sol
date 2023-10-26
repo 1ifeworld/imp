@@ -4,6 +4,8 @@ pragma solidity 0.8.21;
 import {IDelegateRegistry} from "./interfaces/IDelegateRegistry.sol";
 import {IdRegistry} from "./IdRegistry.sol";
 
+/// TODO: bump to sol 0.8.22
+
 /**
  * @title DelegateRegistry
  * @author Lifeworld
@@ -19,20 +21,7 @@ contract DelegateRegistry is IDelegateRegistry {
 
     //////////////////////////////////////////////////
     // EVENTS
-    //////////////////////////////////////////////////    
-
-    /**
-     * @dev Emit an event when a new nodeSchema is registered
-     *
-     *      NodeSchemas are unique identifiers that nodeIds declare as upon registration
-     *      NodeIds that are reigstered without providing an existing nodeSchema will be considered invalid
-     *
-     * @param sender        Address of the account calling `registerNodeSchema()`
-     * @param id            Id to associate with call
-     * @param nodeSchema    The unique nodeSchema being registered
-     * @param data          Data to associate with the registration of a new nodeSchema
-     */
-    event RegisterNodeSchema(address indexed sender, uint256 indexed id, bytes32 indexed nodeSchema, bytes data);    
+    //////////////////////////////////////////////////       
 
     /**
      * @dev Emit an event when an id grants a delegation
@@ -56,7 +45,7 @@ contract DelegateRegistry is IDelegateRegistry {
     /**
      * @notice Specify address of idRegistry
      *
-     * @param _idRegistry IdRegistry address.
+     * @param _idRegistry IdRegistry address
      *
      */
     constructor(address _idRegistry) {

@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import {INodeRegistry} from "./interfaces/INodeRegistry.sol";
 
-// TODO: Bump to 0.8.22
+/// TODO: bump to sol 0.8.22
 
 /**
  * @title NodeRegistry
@@ -11,33 +11,21 @@ import {INodeRegistry} from "./interfaces/INodeRegistry.sol";
  */
 contract NodeRegistry is INodeRegistry {
 
-    // TODO: Update the descriptions for events since they mean different things 
-    //      now that some of data has moved into explicit types rather  
-    //      than being encoded
-
-    //////////////////////////////////////////////////
-    // ERRORS
-    //////////////////////////////////////////////////
-
-    /// @notice Revert when input arrays dont have the same length
-    error Array_Length_Mismatch();
-
     //////////////////////////////////////////////////
     // EVENTS
     //////////////////////////////////////////////////
 
     /**
-     * @dev Emit an event when a new nodeSchema is registered
+     * @dev Emit an event when a new schema is registered
      *
-     *      NodeSchemas are unique schema identifiers that nodeIds declare as upon registration
-     *      NodeIds that are reigstered without providing an existing nodeSchema will be considered invalid
+     *      Schemas are unique hash identifiers that nodeIds anchor themselves on upon registration
+     *      NodeIds that are reigstered without providing an existing schema will be considered invalid
      *
-     * @param sender        Address of the account calling `registerNodeSchema()`
-     * @param id            Id to associate with call
-     * @param nodeSchema    The unique nodeSchema being registered
-     * @param data          Data to associate with the registration of a new nodeSchema
+     * @param sender        Address of the account calling `registerSchema()`
+     * @param schema        Hash value for the unique schema being registered
+     * @param data          Data to associate with the registration of a new schema
      */
-    event RegisterNodeSchema(address indexed sender, uint256 indexed id, bytes32 indexed nodeSchema, bytes data);
+    event RegisterSchema(address indexed sender, bytes32 indexed schema, bytes data);
 
     /**
      * @dev Emit an event when a new node is registered
@@ -47,28 +35,24 @@ contract NodeRegistry is INodeRegistry {
      *      affective filtering of the entire data set produced via the registry
      *
      * @param sender        Address of the account calling `registerNode()`
-     * @param id            Id to be associated with call
      * @param nodeId        NodeId being registered
-     * @param nodeSchema      Type of node being registered
      * @param data          Data to associate with the registration of a new nodeId
      */
-    event RegisterNode(address sender, uint256 indexed id, uint256 indexed nodeId, bytes32 indexed nodeSchema, bytes data);
+    event RegisterNode(address sender, uint256 indexed nodeId, bytes data);
 
     /**
      * @dev Emit an event when a new message is sent
      *
      *      Messages allow for the generic transmission of data. The sender field in the
      *      message event allows for filtering by accounts such as app level signers
-     *      while the messageId field allows for a universal-id mechanism to target
+     *      while the messageId field allows for a universal-id mechanism to identify
      *      given messages regardless of the nodeId they are targeting.
      *
      * @param sender        Address of the account calling `messageNode()`
-     * @param id            Id to associate with message
-     * @param nodeId        NodeId to target with message
      * @param messageId     The messageId being generated
      * @param data          Data to transmit in the message
      */
-    event Message(address sender, uint256 indexed id, uint256 indexed nodeId, uint256 indexed messageId, bytes data);
+    event MessageNode(address sender, uint256 indexed messageId, bytes data);
 
     //////////////////////////////////////////////////
     // STORAGE
@@ -77,7 +61,7 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    uint256 public nodeSchemaEntropy;
+    uint256 public schemaCount;
 
     /**
      * @inheritdoc INodeRegistry
@@ -96,28 +80,25 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    function registerNodeSchema(uint256 id, bytes calldata data) external returns (bytes32 nodeSchema) {
-        // Increments nodeSchemaEntropy before hash generation
-        nodeSchema = keccak256(abi.encode(block.chainid, address(this), ++nodeSchemaEntropy));
-        emit RegisterNodeSchema(msg.sender, id, nodeSchema, data);
+    function registerSchema(bytes calldata data) external returns (bytes32 schema) {
+        // Increments schemaCount before hash generation
+        schema = keccak256(abi.encode(block.chainid, address(this), ++schemaCount));
+        emit RegisterSchema(msg.sender, schema, data);
     }
 
     /**
      * @inheritdoc INodeRegistry
      */
-    function registerNodeSchemaBatch(uint256 id, bytes[] calldata datas)
-        external
-        returns (bytes32[] memory nodeSchemas)
-    {
+    function registerSchemaBatch(bytes[] calldata datas) external returns (bytes32[] memory schemas) {
         // Cache msg.sender
         address sender = msg.sender;
         // Assign return data length
-        nodeSchemas = new bytes32[](datas.length);
+        schemas = new bytes32[](datas.length);
         for (uint256 i; i < datas.length; ++i) {
-            // Increments nodeSchemaEntropy before hash generation
-            nodeSchemas[i] = keccak256(abi.encode(block.chainid, address(this), ++nodeSchemaEntropy));
+            // Increments schemaCount before hash generation
+            schemas[i] = keccak256(abi.encode(block.chainid, address(this), ++schemaCount));
             // Emit for indexing
-            emit RegisterNodeSchema(sender, id, nodeSchemas[i], datas[i]);
+            emit RegisterSchema(sender, schemas[i], datas[i]);
         }
     }
 
@@ -128,32 +109,25 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    function registerNode(uint256 id, bytes32 nodeSchema, bytes calldata data) external returns (uint256 nodeId) {
+    function registerNode(bytes calldata data) external returns (uint256 nodeId) {
         // Increments nodeCount before event emission
         nodeId = ++nodeCount;
-        emit RegisterNode(msg.sender, id, nodeId, nodeSchema, data);
+        emit RegisterNode(msg.sender, nodeId, data);
     }
 
     /**
      * @inheritdoc INodeRegistry
      */
-    function registerNodeBatch(uint256 id, bytes32[] calldata nodeSchemas, bytes[] calldata datas)
-        external
-        returns (uint256[] memory nodeIds)
-    {
+    function registerNodeBatch(bytes[] calldata datas) external returns (uint256[] memory nodeIds) {
         // Cache msg.sender
         address sender = msg.sender;
-        // Cache nodeSchemas length
-        uint256 quantity = nodeSchemas.length;
-        // Check input lengths
-        if (quantity != datas.length) revert Array_Length_Mismatch();
         // Assign return data length
-        nodeIds = new uint256[](quantity);
-        for (uint256 i; i < quantity; ++i) {
+        nodeIds = new uint256[](datas.length);
+        for (uint256 i; i < datas.length; ++i) {
             // Copy nodeId to return variable
             nodeIds[i] = ++nodeCount;
             // Increments nodeCount before event emission
-            emit RegisterNode(sender, id, nodeIds[i], nodeSchemas[i], datas[i]);
+            emit RegisterNode(sender, nodeIds[i], datas[i]);
         }
     }
 
@@ -164,32 +138,25 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    function messageNode(uint256 id, uint256 nodeId, bytes calldata data) external returns (uint256 messageId) {
+    function messageNode(bytes calldata data) external returns (uint256 messageId) {
         // Increments messageCount before event emission
         messageId = ++messageCount;
-        emit Message(msg.sender, id, nodeId, messageId, data);
+        emit MessageNode(msg.sender, messageId, data);
     }
 
     /**
      * @inheritdoc INodeRegistry
      */
-    function messageNodeBatch(uint256 id, uint256[] calldata nodeIds, bytes[] calldata datas)
-        external
-        returns (uint256[] memory messageIds)
-    {
+    function messageNodeBatch(bytes[] calldata datas) external returns (uint256[] memory messageIds) {
         // Cache msg.sender
         address sender = msg.sender;
-        // Cache nodeIds length
-        uint256 quantity = nodeIds.length;
-        // Check input lengths
-        if (quantity != datas.length) revert Array_Length_Mismatch();
         // Assign return data length
-        messageIds = new uint256[](quantity);
-        for (uint256 i; i < quantity; ++i) {
+        messageIds = new uint256[](datas.length);
+        for (uint256 i; i < datas.length; ++i) {
             // Increment messageCount and copy to return variable
             messageIds[i] = ++messageCount;
             // Emit Message event
-            emit Message(sender, id, nodeIds[i], messageIds[i], datas[i]);
+            emit MessageNode(sender, messageIds[i], datas[i]);
         }
     }
 }

@@ -3,10 +3,6 @@ pragma solidity 0.8.21;
 
 interface INodeRegistry {
 
-    // TODO: Update the descriptions for events since they mean different things 
-    //      now that some of data has moved into explicit types rather  
-    //      than being encoded
-
     //////////////////////////////////////////////////
     // STORAGE
     //////////////////////////////////////////////////
@@ -14,7 +10,7 @@ interface INodeRegistry {
     /**
      * @notice Provides entropy for nodeSchema registrations
      */
-    function nodeSchemaEntropy() external view returns (uint256);    
+    function schemaCount() external view returns (uint256);    
 
     /**
      * @notice Tracks number of nodes registered
@@ -31,22 +27,22 @@ interface INodeRegistry {
     //////////////////////////////////////////////////    
 
     /**
-     * @notice Register a new nodeSchema by incrementing the nodeEntropy and emitting a
-     *      unique hash. These hashes can be used to anchor schemas for nodeIds. Callable by anyone
+     * @notice Register a new schema by incrementing the schemaCount and emitting a
+     *         unique hash of it. These hashes can be used to anchor schemas for nodeIds
+     * @dev Callable by anyone
      *
-     * @param id          Id to associate with RegisterNodeSchema event
-     * @param data        Data to associate with RegisterNodeSchema event
+     * @param data          Data to associate with RegisterSchema event
      */
-    function registerNodeSchema(uint256 id, bytes calldata data) external returns (bytes32 nodeSchema);    
+    function registerSchema(bytes calldata data) external returns (bytes32);    
 
     /**
-     * @notice Register a new nodeSchema by incrementing the nodeEntropy and emitting a
-     *      unique hash. These hashes can be used to anchor schemas for nodeIds. Callable by anyone
+     * @notice Register new schemas by incrementing the schemaCount and emitting a
+     *         unique hashes of it. These hashes can be used to anchor schemas for nodeIds
+     * @dev Callable by anyone
      *
-     * @param id           Id to associate with RegisterNodeSchema event
-     * @param datas        Data to associate with RegisterNodeSchema events
+     * @param datas         Data to associate with RegisterSchema events
      */
-    function registerNodeSchemaBatch(uint256 id, bytes[] calldata datas) external returns (bytes32[] memory);  
+    function registerSchemaBatch(bytes[] calldata datas) external returns (bytes32[] memory);  
 
     //////////////////////////////////////////////////
     // NODE ID REGISTRATION
@@ -54,21 +50,19 @@ interface INodeRegistry {
 
     /**
      * @notice Register a new node by incrementing the nodeCount and emitting data
-     *      in association with the registration event. Callable by anyone.
+     *         in association with the registration event
+     * @dev Callable by anyone
      *
-     * @param id            Id to associate with RegisterNode event
-     * @param nodeSchema    Schema to associate with RegisterNode event
      * @param data          Data to associate with RegisterNode event
      */
-    function registerNode(uint256 id, bytes32 nodeSchema, bytes calldata data) external returns (uint256 nodeId);
+    function registerNode(bytes calldata data) external returns (uint256);
 
     /**
      * @notice Batch version of `registerNode`
      *
-     * @param id        Id to associate with RegisterNode event
-     * @param datas     Data to associate with RegisterNode events
+     * @param datas         Data to associate with RegisterNode events
      */
-    function registerNodeBatch(uint256 id, bytes32[] calldata nodeSchema, bytes[] calldata datas) external returns (uint256[] memory nodeIds);
+    function registerNodeBatch(bytes[] calldata datas) external returns (uint256[] memory);
 
     //////////////////////////////////////////////////
     // NODE MESSAGING
@@ -76,20 +70,16 @@ interface INodeRegistry {
 
     /**
      * @notice Message a node by incrementing the messageCount and emitting data
-     *      in association with a given id, nodeId, and message event. Callable by anyone.
+     * @dev Callable by anyone
      *
-     * @param id        Id to associate with Message event
-     * @param nodeId    NodeId to associate with Message event
-     * @param data      Data to associate with Message event
+     * @param data          Data to associate with Message event
      */
-    function messageNode(uint256 id, uint256 nodeId, bytes calldata data) external returns (uint256 messageId);
+    function messageNode(bytes calldata data) external returns (uint256);
 
     /**
      * @notice Batch version of `messageNode`
      *
-     * @param id         Id to associate with Message event
-     * @param nodeIds    NodeIds to associate with Message event
-     * @param datas      Data to associate with each Message event
+     * @param datas         Data to associate with each Message event
      */
-    function messageNodeBatch(uint256 id, uint256[] calldata nodeIds, bytes[] calldata datas) external returns (uint256[] memory messageIds);
+    function messageNodeBatch(bytes[] calldata datas) external returns (uint256[] memory);
 }

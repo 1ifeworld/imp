@@ -5,6 +5,9 @@ import {IIdRegistry} from "./interfaces/IIdRegistry.sol";
 import {ECDSA} from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
 
+/// TODO: Missing id recovery functionality
+/// TODO: bump to sol 0.8.22
+
 /**
  * @title IdRegistry
  * @author Lifeworld
@@ -23,10 +26,10 @@ contract IdRegistry is IIdRegistry {
     //////////////////////////////////////////////////   
 
     /// @dev Revert when the destination must be empty but has an id.
-    error HasId();    
+    error Has_Id();    
 
     /// @dev Revert when the caller must have an id but does not have one.
-    error HasNoId();
+    error Has_No_Id();
 
     /// @dev Revert when caller is not designated transfer recipient
     error Not_Transfer_Recipient();
@@ -50,11 +53,11 @@ contract IdRegistry is IIdRegistry {
     /**
      * @dev Emit an event when a new id is registered
      *
-     *      Ids are unique identifiers that can be registered to an address an neve repeat
+     *      Ids are unique identifiers that can be registered to an account an never repeat
      *
-     * @param to            Address of the account calling `registerNode()`
+     * @param to            Account calling `registerNode()`
      * @param id            The id being registered
-     * @param backup        Address assigned as a backup for the given id
+     * @param backup        Account assigned as a backup for the given id
      * @param data          Data to be associated with registration of id
      */
     event Register(address indexed to, uint256 indexed id, address backup, bytes data);
@@ -165,7 +168,7 @@ contract IdRegistry is IIdRegistry {
         // Cache msg.sender
         address sender = msg.sender;        
         // Revert if the sender already has an id
-        if (idOwnedBy[sender] != 0) revert HasId();    
+        if (idOwnedBy[sender] != 0) revert Has_Id();    
         // Increment idCount
         id = ++idCount;
         // Increment transfer count for target id. Registration will always be 0 => 1
@@ -190,7 +193,7 @@ contract IdRegistry is IIdRegistry {
         // Retrieve id for given sender
         uint256 fromId = idOwnedBy[sender];        
         // Check if sender has an id
-        if (fromId == 0) revert HasNoId();
+        if (fromId == 0) revert Has_No_Id();
         // Update pendingTransfers storage
         pendingTransfers[fromId] = PendingTransfer({
             from: sender,
@@ -208,7 +211,7 @@ contract IdRegistry is IIdRegistry {
         // Check if msg.sender is recipient address
         if (msg.sender != pendingTransfer.to) revert Not_Transfer_Recipient();
         // Check that pendingTransfer.to doesn't already own id
-        if (idOwnedBy[pendingTransfer.to] != 0) revert HasId();
+        if (idOwnedBy[pendingTransfer.to] != 0) revert Has_Id();
         // Execute transfer process
         _unsafeTransfer(id, pendingTransfer.from, pendingTransfer.to);
     }
@@ -266,10 +269,12 @@ contract IdRegistry is IIdRegistry {
      * @inheritdoc IIdRegistry
      */     
     function attest(bytes32 hash, bytes calldata sig, address signerOverride) external {
-        // Cache msg.sender. 
+        // Cache msg.sender
         address sender = msg.sender;
-        // Reterieve id for sender address
+        // Reterieve id for sender
         uint256 id = idOwnedBy[sender];      
+        // Check if sender owns an id
+        if (id == 0) revert Has_No_Id();
         // Check if signerOveride for erc1271 contract account sig verification is present
         if (signerOverride == address(0)) {
             // Attempt to recover attestor address from EOA signature
@@ -292,7 +297,9 @@ contract IdRegistry is IIdRegistry {
         } 
     }
 
-    // Revoke Attestation callable by anyone
+    /**
+     * @inheritdoc IIdRegistry
+     */      
     function revokeAttestation() external {
         // Cache msg.sender
         address sender = msg.sender;
@@ -300,20 +307,22 @@ contract IdRegistry is IIdRegistry {
         uint256 id = attestedBy[sender];
         // Revert if id = 0;
         if (id == 0) revert No_Active_Attestation();
-        // Clear storage for attestations
+        // Clear attestation storage
         delete attestedBy[sender];
         delete attestedFor[id];
         // Emit for indexing
         emit RevokeAttestation(id, sender);
     }        
 
-    // Revoke Attestation function without invariant checks. Must Enforce elsewhere
+    /**
+     * @dev Revoke attestation for id without checking invariants
+     */        
     function _unsafeRevokeAttestation(uint256 id) internal {
         // Retrieve attestor address, if applicable
         address attestor = attestedFor[id];
         // If attestor != address(0), clear storage and emit revoke event
         if (attestor != address(0)) {
-            // Clear storage for attestations
+            // Clear attestation storage
             delete attestedBy[attestor];
             delete attestedFor[id];
             // Emit for indexing
