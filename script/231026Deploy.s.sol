@@ -20,14 +20,13 @@ contract DeployCore is Script {
     NodeRegistry nodeRegistry;
     DelegateRegistry delegateRegistry;
     RiverValidatorV1 riverValidator;
-
-    LightAccount lightAccount;
-    LightAccountFactory lightAccountFactory;
-
-    IEntryPoint entryPoint = IEntryPoint(0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789);
-    address initialOwner = 0x806164c929Ad3A6f4bd70c2370b3Ef36c64dEaa8;
     address operator = 0x004991c3bbcF3dd0596292C80351798965070D75;
-    uint256 salt = 1234;
+
+    // LightAccount lightAccount;
+    // LightAccountFactory lightAccountFactory;
+    // IEntryPoint entryPoint = IEntryPoint(0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789);
+    // address initialOwner = 0x806164c929Ad3A6f4bd70c2370b3Ef36c64dEaa8;
+    // uint256 salt = 1234;
     
     function setUp() public {}
 
@@ -41,8 +40,8 @@ contract DeployCore is Script {
         delegateRegistry = new DelegateRegistry(address(idRegistry));
         riverValidator = new RiverValidatorV1(operator);
 
-        lightAccountFactory = new LightAccountFactory(entryPoint);
-        lightAccountFactory.createAccount(initialOwner, 1234);
+        // lightAccountFactory = new LightAccountFactory(entryPoint);
+        // lightAccountFactory.createAccount(initialOwner, 1234);
 
         vm.stopBroadcast();
     }

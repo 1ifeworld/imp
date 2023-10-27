@@ -14,8 +14,6 @@ import {INodeRegistryTypes} from "./utils/INodeRegistryTypes.sol";
 */
 
 contract NodeRegistryTest is Test, INodeRegistryTypes {
-    // TYPES
-
 
     //////////////////////////////////////////////////
     // EVENTS
@@ -79,7 +77,7 @@ contract NodeRegistryTest is Test, INodeRegistryTypes {
             regBody: zeroBytes
         }));
         // Emit event we are expecting
-        // emit NodeRegistry.RegisterSchema(mockUserAccount, mockSchema, encodedData);
+        // emit RegisterSchema(mockUserAccount, mockSchema, encodedData);
         // Perform call to emit event
         nodeRegistry.registerSchema(encodedData);
         // Perform another call to test gas for second register node call in same txn

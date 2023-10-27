@@ -16,8 +16,8 @@ contract DelegateRegistry is IDelegateRegistry {
     // ERRORS
     //////////////////////////////////////////////////   
 
-    /// @dev Revert when msg.sender is not the target id owner
-    error Only_Id_Owner();    
+    /// @dev Revert when the caller must have an id but does not have one.
+    error Has_No_Id();    
 
     //////////////////////////////////////////////////
     // EVENTS
@@ -77,12 +77,12 @@ contract DelegateRegistry is IDelegateRegistry {
     /**
      * @inheritdoc IDelegateRegistry
      */
-    function updateDelegate(uint256 id, address target, bool status) external {
-        // Cache msg.sender
-        address sender = msg.sender;
-        // Check if sender is id custody address
-        if (idRegistry.idOwnedBy(sender) != id) revert Only_Id_Owner();
-        // Retrieve current transfer nonce for id
+    function updateDelegate(address target, bool status) external {
+        // Retrieve id for msg.sender
+        uint256 id = idRegistry.idOwnedBy(msg.sender);
+        // Check if sender has an id
+        if (id == 0) revert Has_No_Id();
+        // Retrieve transfer nonce for id
         uint256 idTransferNonce = idRegistry.transferCountForId(id);
         // Delegate to target for given id + transfer nonce
         idDelegates[id][idTransferNonce][target] = status;
