@@ -16,6 +16,8 @@ contract DeployCore is Script {
     DelegateRegistry delegateRegistry;
     Receipts receipts;
     address operator = 0x004991c3bbcF3dd0596292C80351798965070D75;
+
+    address hardcode = 0xd85Be25907774B74295Def9c6CB628F846306aEa;
     
     function setUp() public {}
 
@@ -25,9 +27,9 @@ contract DeployCore is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         // nodeRegistry = new NodeRegistry();
-        idRegistry = new IdRegistry("IdRegistry", "IDR");
-        delegateRegistry = new DelegateRegistry(address(idRegistry));
-        receipts = new Receipts(operator);
+        // idRegistry = new IdRegistry("IdRegistry", "IDR");
+        delegateRegistry = new DelegateRegistry(hardcode);
+        // receipts = new Receipts(operator);
 
         vm.stopBroadcast();
     }

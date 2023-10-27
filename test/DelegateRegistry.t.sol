@@ -30,6 +30,7 @@ contract DelegateRegistryTest is Test {
 
     /* Actors */
     Account public eoa_owner;
+    Account public eoa_malicious;
     Account public eoa_delegate;
 
     /* IMP infra */
@@ -43,6 +44,7 @@ contract DelegateRegistryTest is Test {
     // Set-up called before each test
     function setUp() public {
         eoa_owner = makeAccount("owner");
+        eoa_malicious = makeAccount("malicious");
         eoa_delegate = makeAccount("delegate");
 
         idRegistry = new IdRegistry(idRegistryName, idRegistrySymbol);
@@ -69,12 +71,26 @@ contract DelegateRegistryTest is Test {
         require(delegateRegistry.idDelegates(1, 1, eoa_delegate.addr) == true, "delegate set incorrectly");
     }           
 
-    function test_Revert_HasNoId_updateDelegate() public {
+    function test_Revert_NotMinted_updateDelegate() public {
         // prank into eoa that is the owner of light account
         vm.startPrank(eoa_owner.addr); 
         // Expect revert because eoa_owner doesnt own an id yet
-        vm.expectRevert(abi.encodeWithSignature("Has_No_Id()"));
+        vm.expectRevert("NOT_MINTED");
         // call updateDelegate on delegateRegistry
         delegateRegistry.updateDelegate(1, eoa_delegate.addr, true);
     }              
+
+    function test_Revert_HasNoId_updateDelegate() public {
+        // prank into eoa that will call register
+        vm.startPrank(eoa_owner.addr); 
+        // call register on idRegistry
+        idRegistry.register(mockRegisterBackup, zeroBytes);
+        vm.stopPrank();        
+        // prank into eoa that will try to delegate on behalf of token it doesnt own
+        vm.startPrank(eoa_malicious.addr);        
+        // Expect revert because eoa_owner doesnt own an id yet
+        vm.expectRevert(abi.encodeWithSignature("Not_Authorized()"));
+        // call updateDelegate on delegateRegistry
+        delegateRegistry.updateDelegate(1, eoa_delegate.addr, true);
+    }           
 }
