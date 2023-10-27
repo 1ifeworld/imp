@@ -4,20 +4,26 @@ pragma solidity 0.8.21;
 import {Test, console2} from "forge-std/Test.sol";
 
 import {NodeRegistry} from "../src/core/NodeRegistry.sol";
+import {INodeRegistryTypes} from "./utils/INodeRegistryTypes.sol";
 
 /*
-    NOTE:
-    MISSING nodeSchemaRegistration tests
+    TODO:
+
+    1. fix issues with the testing around expectEmit
+    2. run gas calcs again for all tests
 */
 
-contract NodeRegistryTest is Test {
+contract NodeRegistryTest is Test, INodeRegistryTypes {
+    // TYPES
+
+
     //////////////////////////////////////////////////
     // EVENTS
     //////////////////////////////////////////////////    
 
-    event RegisterSchema(address indexed sender, bytes32 indexed schema, bytes data);
-    event RegisterNode(address sender, uint256 indexed nodeId, bytes data);
-    event MessageNode(address sender, uint256 indexed messageId, bytes data);        
+    event RegisterSchema(address indexed sender, bytes32 indexed schema, bytes indexed data);
+    event RegisterNode(address indexed sender, uint256 indexed nodeId, bytes indexed data);
+    event MessageNode(address indexed sender, uint256 indexed messageId, bytes indexed data);        
 
     //////////////////////////////////////////////////
     // CONSTANTS
@@ -26,7 +32,8 @@ contract NodeRegistryTest is Test {
     address mockUserAccount = address(0x123);
     uint256 mockUserId = 1;
     uint256 mockNodeId = 1;    
-    bytes32 mockNodeSchema = keccak256(abi.encode(1));
+    bytes32 mockSchema = keccak256(abi.encode(1));
+    uint256 mockRegType = 1;
     string mockUri = "ipfs://bafybeihax3e3suai6qrnjrgletfaqfzriziokl7zozrq3nh42df7u74jyu";
     bytes32 mockMerkleRoot = 0x86c29b38b8e59d3d08913796a5f1eeaefa01125ee2a61fdfd3aeffdcfe6180e1;
     bytes zeroBytes = new bytes(0);
@@ -50,11 +57,49 @@ contract NodeRegistryTest is Test {
     }    
 
     //////////////////////////////////////////////////
-    // REGISTER NODE TESTS
+    // REGISTER SCHEMA TESTS
     ////////////////////////////////////////////////// 
 
     /*
-        NODE REGISTRATION TESTS
+      SCHEMA REGISTRATION TESTS
+        - test_registerSchema
+        - test_batchRegisterSchema
+        - test_initialData_RegisterSchema
+        - test_initialData_batchRegisterSchema
+    */    
+    function test_registerSchema() public {
+        vm.startPrank(mockUserAccount);
+        // Checks if topics 1, 2, 3, non-indexed data and event emitter match expected emitter + event signature + event values
+        // vm.expectEmit(true, true, true, false, address(nodeRegistry));        
+        // vm.expectEmit(address(nodeRegistry));        
+        // Generate input data
+        bytes memory encodedData = abi.encode(SchemaRegistration({
+            userId: mockUserId,
+            regType: mockRegType,
+            regBody: zeroBytes
+        }));
+        // Emit event we are expecting
+        // emit NodeRegistry.RegisterSchema(mockUserAccount, mockSchema, encodedData);
+        // Perform call to emit event
+        nodeRegistry.registerSchema(encodedData);
+        // Perform another call to test gas for second register node call in same txn
+        nodeRegistry.registerSchema(encodedData);
+        require(nodeRegistry.schemaCount() == 3, "schemaCount not incremented correctly");
+    }
+
+    function test_batchRegisterSchema() public {
+        vm.prank(mockUserAccount);
+        uint256 quantity = 10;
+        nodeRegistry.registerSchemaBatch(generateBatchRegisterData(quantity));
+        require(nodeRegistry.schemaCount() == 11, "schemaCount not incremented correctly");
+    }       
+
+    //////////////////////////////////////////////////
+    // REGISTER NODE TESTS
+    //////////////////////////////////////////////////     
+
+    /*
+        TESTS
         - test_registerNode
         - test_batchRegisterNode
         - test_initialData_RegisterNode
@@ -63,38 +108,45 @@ contract NodeRegistryTest is Test {
 
     /*
         Gas breakdown
-        - first node registration (in setup, no data, cold access, zero -> non-zero messageCount) = 25,693
-        - second node registration (no data, cold access, non-zero -> non-zero messageCount) = 8,593
-        - third node registration (no data, warm access, non-zero -> non-zero messageCount) = 3,793
+        - first node registration (in setup, no data, cold access, zero -> non-zero messageCount) = 
+        - second node registration (no data, cold access, non-zero -> non-zero messageCount) = 
+        - third node registration (no data, warm access, non-zero -> non-zero messageCount) = 
     */
-    // function test_registerNode() public {
-    //     vm.startPrank(mockUserAccount);
-    //     // Checks if topics 1, 2, 3, non-indexed data and event emitter match expected emitter + event signature + event values
-    //     vm.expectEmit(true, true, true, true, address(nodeRegistry));        
-    //     // Emit event we are expecting
-    //     emit NodeRegistry.RegisterNode(mockUserAccount, mockUserId, 2, mockNodeSchema, zeroBytes);
-    //     // Perform call to emit event
-    //     nodeRegistry.registerNode(mockUserId, mockNodeSchema, zeroBytes);
-    //     // Perform another call to test gas for second register node call in same txn
-    //     nodeRegistry.registerNode(mockUserId, mockNodeSchema, zeroBytes);
-    //     require(nodeRegistry.nodeCount() == 3, "nodeCount not incremented correctly");
-    // }    
+    function test_registerNode() public {
+        vm.startPrank(mockUserAccount);
+        // Checks if topics 1, 2, 3, non-indexed data and event emitter match expected emitter + event signature + event values
+        // vm.expectEmit(true, true, true, false, address(nodeRegistry));      
+        // Generate input data
+        bytes memory encodedData = abi.encode(NodeRegistration({
+            userId: mockUserId,
+            schema: mockSchema,
+            regType: mockRegType,
+            regBody: zeroBytes
+        }));
+        // Emit event we are expecting
+        // emit NodeRegistry.RegisterNode(mockUserAccount, 2, zeroBytes);        
+        // Perform call to emit event
+        nodeRegistry.registerNode(encodedData);
+        // Perform another call to test gas for second register node call in same txn
+        nodeRegistry.registerNode(encodedData);
+        require(nodeRegistry.nodeCount() == 3, "nodeCount not incremented correctly");
+    }    
 
     /*
         Gas breakdown
-        - 10 non-zero -> non-zero registrations w/ empty data for each = 43.04k
+        - 10 non-zero -> non-zero registrations w/ empty data for each = 
     */
-    // function test_batchRegisterNode() public {
-    //     vm.prank(mockUserAccount);
-    //     uint256 quantity = 10;
-    //     nodeRegistry.registerNodeBatch(mockUserId, generateNodeSchemas(quantity), generateEmptyData(quantity));
-    //     require(nodeRegistry.nodeCount() == 11, "nodeCount not incremented correctly");
-    // }        
+    function test_batchRegisterNode() public {
+        vm.prank(mockUserAccount);
+        uint256 quantity = 10;
+        nodeRegistry.registerNodeBatch(generateBatchRegisterData(quantity));
+        require(nodeRegistry.nodeCount() == 11, "nodeCount not incremented correctly");
+    }        
 
     /*
         Gas breakdown
-        - first node registration (in setup, no data) = 25,693
-        - second node registration (mock data) = 9,641
+        - first node registration (in setup, no data) = 
+        - second node registration (mock data) = 
     */
     // function test_initialData_RegisterNode() public {
     //     vm.prank(mockUserAccount);
@@ -104,7 +156,7 @@ contract NodeRegistryTest is Test {
 
     /*
         Gas breakdown
-        - 10 non-zero -> non-zero registrations w/ mock data for each = 53.4k
+        - 10 non-zero -> non-zero registrations w/ mock data for each =
     */
     // function test_initialData_batchRegisterNode() public {
     //     vm.prank(mockUserAccount);
@@ -129,31 +181,39 @@ contract NodeRegistryTest is Test {
 
     /*
         Gas breakdown
-        - first message (in setup, no data, cold access, zero -> non-zero messageCount) = 24.79k 24795
-        - second message (no data, cold access, non-zero -> non-zero messageCount) = 7,695
-        - third message (no data, warm access, non-zero -> non-zero messageCount) = 2,895
+        - first message (in setup, no data, cold access, zero -> non-zero messageCount) = 
+        - second message (no data, cold access, non-zero -> non-zero messageCount) = 
+        - third message (no data, warm access, non-zero -> non-zero messageCount) = 
     */
-    // function test_messageNode() public {
-    //     vm.prank(mockUserAccount);
-    //     nodeRegistry.messageNode(new bytes(0));
-    //     nodeRegistry.messageNode(new bytes(0));
-    //     require(nodeRegistry.messageCount() == 3, "messageCount not incremented correctly");
-    // }  
+    function test_messageNode() public {
+        vm.prank(mockUserAccount);
+        // generate input data
+        bytes memory encodedData = abi.encode(NodeMessage({
+            userId: mockUserId,
+            nodeId: mockNodeId,
+            msgType: 1,
+            msgBody: zeroBytes
+        }));
+        // Call messageNode x 2        
+        nodeRegistry.messageNode(encodedData);
+        nodeRegistry.messageNode(encodedData);
+        require(nodeRegistry.messageCount() == 3, "messageCount not incremented correctly");
+    }  
 
     /*
         Gas breakdown
-        - 10 non-zero -> non-zero registrations w/ empty data for each = 32.7k
+        - 10 non-zero -> non-zero registrations w/ empty data for each = 
     */
-    // function test_batchMessageNode() public {
-    //     vm.prank(mockUserAccount);
-    //     nodeRegistry.messageNodeBatch(generateEmptyData(10));
-    //     require(nodeRegistry.messageCount() == 11, "messageCount not incremented correctly");
-    // }    
+    function test_batchMessageNode() public {
+        vm.prank(mockUserAccount);
+        nodeRegistry.messageNodeBatch(generateEmptyData(10));
+        require(nodeRegistry.messageCount() == 11, "messageCount not incremented correctly");
+    }    
 
     /*
         Gas breakdown
-        - first message (in setup, no data) = 24.79k
-        - second message (mock data) = 9,791
+        - first message (in setup, no data) = 
+        - second message (mock data) =
     */
     // function test_publicationData_messageNode() public {
     //     vm.prank(mockUserAccount);
@@ -163,7 +223,7 @@ contract NodeRegistryTest is Test {
 
     /*
         Gas breakdown
-        - 10 non-zero -> non-zero messages w/ mock pub uri data for each = 53,514
+        - 10 non-zero -> non-zero messages w/ mock pub uri data for each =
     */
     // function test_publicationData_batchMessageNode() public {
     //     vm.prank(mockUserAccount);
@@ -173,8 +233,8 @@ contract NodeRegistryTest is Test {
        
     /*
         Gas breakdown
-        - first message (in setup, no data) = 24.79k
-        - second message (mock pointer data) = 10,053
+        - first message (in setup, no data) = 
+        - second message (mock pointer data) = 1
     */
     // function test_pointerData_messageNode() public {
     //     vm.prank(mockUserAccount);
@@ -197,6 +257,7 @@ contract NodeRegistryTest is Test {
         mockInitialAdmins[0] = mockUserAccount;                
         batchRegisterData = new bytes[](quantity);
         for (uint256 i; i < quantity; ++i) {
+            // batchRegisterData[i] = zeroBytes;
             batchRegisterData[i] = abi.encode(mockInitialAdmins, mockMerkleRoot);
         }
     }    
@@ -208,7 +269,7 @@ contract NodeRegistryTest is Test {
     function generateBatchMessageData(uint256 quantity) public view returns (bytes[] memory batchMessageData) {         
         batchMessageData = new bytes[](quantity);
         for (uint256 i; i < quantity; ++i) {
-            batchMessageData[i] = abi.encode(mockUserId, mockNodeId, mockNodeSchema, mockUri);
+            batchMessageData[i] = abi.encode(mockUserId, mockNodeId, mockSchema, mockUri);
         }
     }
 
@@ -222,16 +283,9 @@ contract NodeRegistryTest is Test {
     function generateNodeSchemas(uint256 quantity) public view returns (bytes32[] memory batchNodeSchemas) {                   
         batchNodeSchemas = new bytes32[](quantity);
         for (uint256 i; i < quantity; ++i) {
-            batchNodeSchemas[i] = mockNodeSchema;
+            batchNodeSchemas[i] = mockSchema;
         }
     }             
-
-    struct Pointer {
-        uint256 chainId;
-        uint256 tokenId;
-        address target;
-        bool hasTokenId;
-    }    
 
     function generatePointerArray() public pure returns (Pointer[] memory pointers) {
         pointers = new Pointer[](1);
@@ -245,5 +299,5 @@ contract NodeRegistryTest is Test {
 
     function generatePointerMessageData() public pure returns (bytes memory messageData) {
         messageData = abi.encode(generatePointerArray());        
-    }         
+    }           
 }

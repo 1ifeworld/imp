@@ -62,7 +62,7 @@ contract IdRegistryTest is Test {
     }    
 
     //////////////////////////////////////////////////
-    // ID REGISTER TESTS
+    // REGISTER TESTS
     //////////////////////////////////////////////////   
 
     function test_register() public {
@@ -87,7 +87,7 @@ contract IdRegistryTest is Test {
     }    
 
     //////////////////////////////////////////////////
-    // ID ATTEST TESTS
+    // ATTEST TESTS
     //////////////////////////////////////////////////       
 
     function test_EOA_attest() public {
@@ -183,18 +183,19 @@ contract IdRegistryTest is Test {
         // Should revert because of invalid signature due to incorrect digest swap
         vm.expectRevert(abi.encodeWithSignature("Invalid_Signature()"));        
         account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (maliciousDigest, signature, address(account2)))); 
-    }             
+    }              
 
     //////////////////////////////////////////////////
-    // ID ATTESTATION TESTS
-    //////////////////////////////////////////////////     
+    // TRANSFER TESTS
+    //////////////////////////////////////////////////   
 
-    // Tests if light account works properly
-    function testIsValidSignatureForEoaOwner() public {
-        bytes32 digest = keccak256("digest");
-        bytes memory signature = _sign(eoa_owner.key, digest);
-        assertEq(account.isValidSignature(digest, signature), EIP1271_MAGIC_VALUE);
-    }    
+    // TODO
+
+    //////////////////////////////////////////////////
+    // REVOKE ATTESTATION TESTS
+    //////////////////////////////////////////////////   
+
+    // TODO
 
     //////////////////////////////////////////////////
     // HELPERS FROM ALCHEMY -- LIGHT ACCOUNT TESTS
