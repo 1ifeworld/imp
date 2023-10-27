@@ -1,7 +1,8 @@
 {
-    "Router": "0x880253BF121374121fE21948DE3A426a695924ee",
-    "FactoryTransmitterListings": "0x785e41cEa803637A34E6a3EA15dD533526B33740",
-    "PressTransmitterListings": "0x4A6193dfcFD59d8FfdeDF04F0A6d39bb4349675d",
-    "LogicTransmitterMerkleAdmin": "0x4a38667ADcD14d47aB927140E83aAfA64B281E4c",
-    "RendererPressData": "0x85044D4bb1cf8Fc9DadA5b4F0A20b0Fda1076924"
+    "IdRegistry": "0xf89a7C9a0517da815dB66CdcAf61F44E01476697",
+    "DelegateRegistry": "0x995D4621B4B72cd2805f99972A1313bd9876c613",
+    "NodeRegistry": "0xa7E3142140983cc6DBBd27766492C0224CA77587",
+    "RiverValidatorV1": "0x3E3522Ac4d89c56c8759F81a86ff94b8c39A45e3",
+    "LightAccountFactory": "0xFBb085CF89D2622d19C632bbd6BeCD6Eb7E9418E",
+    "LightAccountImplementation": "0x6819478A8B2cc9DeFf0a47a2fEd408eea118156A"
 }
