@@ -36,7 +36,7 @@ contract DeployCore is Script {
         vm.startBroadcast(deployerPrivateKey);
 
         nodeRegistry = new NodeRegistry();
-        idRegistry = new IdRegistry();
+        idRegistry = new IdRegistry("IdRegistry", "IDR");
         delegateRegistry = new DelegateRegistry(address(idRegistry));
         riverValidator = new RiverValidatorV1(operator);
 

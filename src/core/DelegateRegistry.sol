@@ -19,6 +19,9 @@ contract DelegateRegistry is IDelegateRegistry {
     /// @dev Revert when the caller must have an id but does not have one.
     error Has_No_Id();    
 
+    /// @dev Revert when trying to updateDelegate for token you dont own
+    error Not_Authorized();
+
     //////////////////////////////////////////////////
     // EVENTS
     //////////////////////////////////////////////////       
@@ -77,11 +80,13 @@ contract DelegateRegistry is IDelegateRegistry {
     /**
      * @inheritdoc IDelegateRegistry
      */
-    function updateDelegate(address target, bool status) external {
+    function updateDelegate(uint256 id, address target, bool status) external {
         // Retrieve id for msg.sender
-        uint256 id = idRegistry.idOwnedBy(msg.sender);
-        // Check if sender has an id
-        if (id == 0) revert Has_No_Id();
+        address owner = idRegistry.ownerOf(id);
+        // Check if owner address is zero
+        if (owner == address(0)) revert Has_No_Id();
+        // Check if msg.sender is owner
+        if (msg.sender != owner) revert Not_Authorized();
         // Retrieve transfer nonce for id
         uint256 idTransferNonce = idRegistry.transferCountForId(id);
         // Delegate to target for given id + transfer nonce

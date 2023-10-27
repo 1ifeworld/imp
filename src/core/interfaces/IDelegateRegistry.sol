@@ -27,12 +27,13 @@ interface IDelegateRegistry {
     //////////////////////////////////////////////////
 
     /**
-     * @notice Lets id owners assign delegate status for a given target
+     * @notice Lets id owners assign delegate status for a given target and id
      *
+     * @param id        Id to update delegate for
      * @param target    Address to target for delegation
      * @param status    T/F value of delegation status
      */    
-    function updateDelegate(address target, bool status) external;  
+    function updateDelegate(uint256 id, address target, bool status) external;  
 
     //////////////////////////////////////////////////
     // DELEGATION VIEW
@@ -41,8 +42,8 @@ interface IDelegateRegistry {
     /**
      * @notice View current delegate status for given target and id
      *
-     * @param id        Id to update delegate for
-     * @param target    Address to target for delegation
+     * @param id        Id to view delegate for
+     * @param target    Address to check status of
      */   
     function isDelegate(uint256 id, address target) external view returns (bool delegateStatus);
 }

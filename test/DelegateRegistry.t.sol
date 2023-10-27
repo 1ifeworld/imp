@@ -21,6 +21,8 @@ contract DelegateRegistryTest is Test {
     //////////////////////////////////////////////////   
     address public constant mockRegisterBackup = address(0x123);
     bytes public constant zeroBytes = new bytes(0);
+    string public idRegistryName = "IdRegistry";
+    string public idRegistrySymbol = "IDR";    
 
     //////////////////////////////////////////////////
     // PARAMETERS
@@ -43,7 +45,7 @@ contract DelegateRegistryTest is Test {
         eoa_owner = makeAccount("owner");
         eoa_delegate = makeAccount("delegate");
 
-        idRegistry = new IdRegistry();
+        idRegistry = new IdRegistry(idRegistryName, idRegistrySymbol);
         delegateRegistry = new DelegateRegistry(address(idRegistry));
     }    
 
@@ -61,7 +63,7 @@ contract DelegateRegistryTest is Test {
         // emit what we expect
         emit Delegate(1, 1, eoa_delegate.addr, true);
         // call updateDelegate on delegateRegistry
-        delegateRegistry.updateDelegate(eoa_delegate.addr, true);
+        delegateRegistry.updateDelegate(1, eoa_delegate.addr, true);
         // check expected values
         require(delegateRegistry.isDelegate(1, eoa_delegate.addr) == true, "delegate set incorrectly");
         require(delegateRegistry.idDelegates(1, 1, eoa_delegate.addr) == true, "delegate set incorrectly");
@@ -73,6 +75,6 @@ contract DelegateRegistryTest is Test {
         // Expect revert because eoa_owner doesnt own an id yet
         vm.expectRevert(abi.encodeWithSignature("Has_No_Id()"));
         // call updateDelegate on delegateRegistry
-        delegateRegistry.updateDelegate(eoa_delegate.addr, true);
+        delegateRegistry.updateDelegate(1, eoa_delegate.addr, true);
     }              
 }
