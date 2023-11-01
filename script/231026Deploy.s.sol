@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import {console2} from "forge-std/Test.sol";
 
 import {IdRegistry} from "../src/core/IdRegistry.sol";
 import {NodeRegistry} from "../src/core/NodeRegistry.sol";
