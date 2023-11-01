@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
+import {console2} from "forge-std/Test.sol";
 
 import {IdRegistry} from "../src/core/IdRegistry.sol";
 import {NodeRegistry} from "../src/core/NodeRegistry.sol";
@@ -35,10 +36,10 @@ contract DeployCore is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        nodeRegistry = new NodeRegistry();
-        idRegistry = new IdRegistry();
-        delegateRegistry = new DelegateRegistry(address(idRegistry));
-        riverValidator = new RiverValidatorV1(operator);
+        // nodeRegistry = new NodeRegistry();
+        // idRegistry = new IdRegistry();
+        // delegateRegistry = new DelegateRegistry(address(idRegistry));
+        // riverValidator = new RiverValidatorV1(operator);
 
         // lightAccountFactory = new LightAccountFactory(entryPoint);
         // lightAccountFactory.createAccount(initialOwner, 1234);
@@ -51,3 +52,4 @@ contract DeployCore is Script {
 
 // source .env
 // forge script script/231026Deploy.s.sol:DeployCore -vvvv --rpc-url $RPC_URL --broadcast --verify --verifier-url https://api-goerli-optimistic.etherscan.io/api
+// forge script script/231026Deploy.s.sol:DeployCore -vvvv --broadcast --fork-url http://localhost:8545
