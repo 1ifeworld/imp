@@ -7,7 +7,7 @@ import {IdRegistry} from "../../src/core/IdRegistry.sol";
 
 contract IdRegistryScript is Script {
 
-    IdRegistry idRegistry = IdRegistry(0x8A791620dd6260079BF849Dc5567aDC3F2FdC318);
+    IdRegistry idRegistry = IdRegistry(0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512);
     
     function setUp() public {}
 
@@ -25,4 +25,4 @@ contract IdRegistryScript is Script {
 // ======= DEPLOY SCRIPTS =====
 
 // source .env
-// forge script script/IdRegistry.s.sol:IdRegistryScript -vvvv --broadcast --fork-url http://localhost:8545
+// forge script script/transactions/IdRegistry.s.sol:IdRegistryScript -vvvv --broadcast --fork-url http://localhost:8545

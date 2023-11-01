@@ -38,7 +38,7 @@ contract NodeRegistry is INodeRegistry {
      * @param nodeId        NodeId being registered
      * @param data          Data to associate with the registration of a new nodeId
      */
-    event RegisterNode(address indexed sender, uint256 indexed nodeId, bytes indexed data);
+    event RegisterNode(address indexed sender, uint256 indexed nodeId, bytes data);
 
     /**
      * @dev Emit an event when a new message is sent
