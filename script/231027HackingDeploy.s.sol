@@ -24,10 +24,10 @@ contract DeployCore is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        nodeRegistry = new NodeRegistry();
+        // nodeRegistry = new NodeRegistry();
         idRegistry = new IdRegistry("IdRegistry", "IDR");
-        delegateRegistry = new DelegateRegistry(hardcode);
-        receipts = new Receipts(operator);
+        delegateRegistry = new DelegateRegistry(address(idRegistry));
+        // receipts = new Receipts(operator);
 
         vm.stopBroadcast();
     }

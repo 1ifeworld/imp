@@ -147,6 +147,9 @@ contract IdRegistry is IIdRegistry, ERC721 {
     //  */      
     // mapping(uint256 => address) public attestedFor;    
 
+    // EMERGENCY STORAGE FOR HACK
+    mapping(address => uint256) public idOwnedBy;
+
     //////////////////////////////////////////////////
     // CONSTRUCTOR + ERC721 LOGIC
     //////////////////////////////////////////////////     
@@ -181,6 +184,7 @@ contract IdRegistry is IIdRegistry, ERC721 {
         // Cache msg.sender
         address sender = msg.sender;        
         // Revert if the sender already has an id
+        // NOTE: Would need to make tokens non transferable for to work properly
         if (_balanceOf[sender] != 0) revert Has_Id();    
         // Increment idCount
         id = ++idCount;
@@ -189,6 +193,8 @@ contract IdRegistry is IIdRegistry, ERC721 {
         // Mint id token to sender
         // NOTE: this updates _balanceOf and _ownerOf mappings
         _mint(sender, id);
+        // NOTE: emergency storage addition during hackathon due to issue indexing events
+        idOwnedBy[sender] = id;
         // Save backup address for id (can call erc721 transfer function for id)
         backupForId[id] = backup;
         emit Register(sender, id, backup, data);        
