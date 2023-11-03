@@ -1,3 +1,3 @@
-## iDENTITY & mESSAGING pROTOCOL (imp)
+## Identity & Messaging Protocol -- IMP
 
 ![](./assets/jdr4_png.png)
