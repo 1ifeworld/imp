@@ -13,7 +13,7 @@ contract NodeRegistryScript is INodeRegistryTypes, Script {
     function setUp() public {
         
         // NOTE: replace address of NodeRegistry with one you want to target
-        nodeRegistry = NodeRegistry(0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82);
+        nodeRegistry = NodeRegistry(0x5FbDB2315678afecb367f032d93F642f64180aa3);
     }
 
     function run() public {
@@ -22,6 +22,8 @@ contract NodeRegistryScript is INodeRegistryTypes, Script {
         vm.startBroadcast(deployerPrivateKey);
         
         fullCycle();
+
+        // registerNode(1, keccak256(bytes("hi")), 1, new bytes(0));
 
         vm.stopBroadcast();
     }
@@ -45,8 +47,8 @@ contract NodeRegistryScript is INodeRegistryTypes, Script {
             schema: schema, 
             regType: regType,
             regBody: regBody
-        });        
-        nodeId = nodeRegistry.registerNode(abi.encode(nodeRegistration));
+        });                 
+        nodeRegistry.registerNode(abi.encode(nodeRegistration));
     }
 
     function messageNode(uint256 userId, uint256 nodeId, uint256 msgType, bytes memory msgBody) public {

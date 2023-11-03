@@ -36,7 +36,7 @@ contract DelegateRegistry is IDelegateRegistry {
      * @param target        Address receiving delegation
      * @param status        T/F of delegation status
      */
-    event Delegate(uint256 indexed id, uint256 nonce, address indexed target, bool status); 
+    event Delegate(uint256 indexed id, uint256 nonce, address indexed target, bool indexed status); 
 
     //////////////////////////////////////////////////
     // CONSTRUCTOR
