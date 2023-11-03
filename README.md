@@ -1,1 +1,1 @@
-## River Contracts
+## identity & messaging protocol (imp)
