@@ -25,7 +25,7 @@ contract NodeRegistry is INodeRegistry {
      * @param schema        Hash value for the unique schema being registered
      * @param data          Data to associate with the registration of a new schema
      */
-    event RegisterSchema(address indexed sender, bytes32 indexed schema, bytes indexed data);
+    event RegisterSchema(address indexed sender, bytes32 indexed schema, bytes data);
 
     /**
      * @dev Emit an event when a new node is registered
@@ -52,7 +52,7 @@ contract NodeRegistry is INodeRegistry {
      * @param messageId     The messageId being generated
      * @param data          Data to transmit in the message
      */
-    event MessageNode(address indexed sender, uint256 indexed messageId, bytes indexed data);
+    event MessageNode(address indexed sender, uint256 indexed messageId, bytes data);
 
     //////////////////////////////////////////////////
     // STORAGE

@@ -31,6 +31,10 @@ contract DeployCore is Script {
     function setUp() public {}
 
     function run() public {
+        // NEW (?)
+        // bytes32 privateKeyBytes = vm.envBytes32("PRIVATE_KEY");
+        // uint256 deployerPrivateKey = uint256(privateKeyBytes);
+        // Current        
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         vm.startBroadcast(deployerPrivateKey);

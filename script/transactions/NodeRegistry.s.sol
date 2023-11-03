@@ -13,7 +13,7 @@ contract NodeRegistryScript is INodeRegistryTypes, Script {
     function setUp() public {
         
         // NOTE: replace address of NodeRegistry with one you want to target
-        nodeRegistry = NodeRegistry(0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE);
+        nodeRegistry = NodeRegistry(0x5FbDB2315678afecb367f032d93F642f64180aa3);
     }
 
     function run() public {
