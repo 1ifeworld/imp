@@ -28,8 +28,8 @@ interface IIdRegistry {
 
     /**
      * @notice Tracks id registered to a given account
-     */
-    function idOwnedBy(address account) external view returns (uint256);
+     */    
+    function idOwnedBy(address account) external view returns (uint256); 
 
     /**
      * @notice Tracks backup address registered to a given id
@@ -62,6 +62,7 @@ interface IIdRegistry {
 
     /**
      * @notice Register a new id by incrementing the idCount. Callable by anyone.
+     * @dev    Also emits a ERC721 compliant `Transfer` event
      *
      * @param backup      Address to set as backup for id
      * @param data        Aribtary data to emit in Register event
@@ -90,6 +91,8 @@ interface IIdRegistry {
      *         onwners of an id can call `initiateTransfer`
      *         Invariant: address(0) cannot call `acceptTransfer`
      *
+     * @dev    Also emits a ERC721 compliant `Transfer` event     
+     *
      * @param id        Id to accept transfer for
      */
     function acceptTransfer(uint256 id) external;        
@@ -117,11 +120,11 @@ interface IIdRegistry {
      * @dev     Can only be called by id owner
      * @dev     Hash MUST be the result of a keccack256 operation or risks vulnerability
      *  
+     * @param attestor       Included to allow for contract accounts to submit attestations
      * @param hash           Hashed digest for sig verification process
      * @param sig            Signed message for sig verification process
-     * @param signerOverride Optional override to allow contract accounts to submit attestations
      */    
-    function attest(bytes32 hash, bytes calldata sig, address signerOverride) external;
+    function attest(address attestor, bytes32 hash, bytes calldata sig) external;
 
     /**
      * @notice  Revokes any existing attestation from a given account

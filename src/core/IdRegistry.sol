@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.21;
 
-import {IIdRegistry} from "./interfaces/IIdRegistry.sol";
 import {ECDSA} from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
+
+import {ERC721} from "../forks/ERC721.sol";
+import {IdRegistryRenderer} from "./utils/IdRegistryRenderer.sol";
+import {IIdRegistry} from "./interfaces/IIdRegistry.sol";
 
 /// TODO: Missing id recovery functionality
 /// TODO: bump to sol 0.8.22
@@ -12,10 +15,10 @@ import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/Signat
  * @title IdRegistry
  * @author Lifeworld
  */
-contract IdRegistry is IIdRegistry {
+contract IdRegistry is ERC721, IIdRegistry {
 
     //////////////////////////////////////////////////
-    // CUSTOMIZATION
+    // TYPE CUSTOMIZATION
     //////////////////////////////////////////////////  
 
     /// @notice Adds hash.recover() functionality
@@ -36,6 +39,9 @@ contract IdRegistry is IIdRegistry {
 
     /// @dev Revert when caller is not designated transfer initiator
     error Not_Transfer_Initiator();
+
+    /// @dev Revert when desired attestor address does not match ECDSA recovered addresses
+    error Attestor_Mismatch();
 
     /// @dev Revert when address has already attested for another id
     error Has_Attested();        
@@ -116,11 +122,6 @@ contract IdRegistry is IIdRegistry {
 
     /**
      * @inheritdoc IIdRegistry
-     */
-    mapping(address => uint256) public idOwnedBy;
-
-    /**
-     * @inheritdoc IIdRegistry
      */    
     mapping(uint256 => address) public backupForId;    
 
@@ -153,6 +154,13 @@ contract IdRegistry is IIdRegistry {
     /**
      * @inheritdoc IIdRegistry
      */  
+    function idOwnedBy(address account) external view returns (uint256) {
+        return _ownedBy[account];
+    }         
+
+    /**
+     * @inheritdoc IIdRegistry
+     */  
     function transferPendingForId(uint256 id) external view returns (PendingTransfer memory) {
         return pendingTransfers[id];
     }
@@ -168,13 +176,13 @@ contract IdRegistry is IIdRegistry {
         // Cache msg.sender
         address sender = msg.sender;        
         // Revert if the sender already has an id
-        if (idOwnedBy[sender] != 0) revert Has_Id();    
+        if (_ownedBy[sender] != 0) revert Has_Id();    
         // Increment idCount
         id = ++idCount;
         // Increment transfer count for target id. Registration will always be 0 => 1
         ++transferCountForId[id];
         // Assign id to owner
-        idOwnedBy[sender] = id;
+        _mint(sender, id);
         // Assign backup to id
         backupForId[id] = backup;
         emit Register(sender, id, backup, data);        
@@ -191,7 +199,7 @@ contract IdRegistry is IIdRegistry {
         // Cache msg.sender
         address sender = msg.sender;
         // Retrieve id for given sender
-        uint256 fromId = idOwnedBy[sender];        
+        uint256 fromId = _ownedBy[sender];        
         // Check if sender has an id
         if (fromId == 0) revert Has_No_Id();
         // Update pendingTransfers storage
@@ -211,7 +219,7 @@ contract IdRegistry is IIdRegistry {
         // Check if msg.sender is recipient address
         if (msg.sender != pendingTransfer.to) revert Not_Transfer_Recipient();
         // Check that pendingTransfer.to doesn't already own id
-        if (idOwnedBy[pendingTransfer.to] != 0) revert Has_Id();
+        if (_ownedBy[pendingTransfer.to] != 0) revert Has_Id();
         // Execute transfer process
         _unsafeTransfer(id, pendingTransfer.from, pendingTransfer.to);
     }
@@ -233,16 +241,18 @@ contract IdRegistry is IIdRegistry {
      * @dev Transfer id without checking invariants
      */    
     function _unsafeTransfer(uint256 id, address from, address to) internal {
-        // Assign ownership of designated id to "to" address
-        idOwnedBy[to] = id;
-        // Delete ownership of designated id from "from" address
-        delete idOwnedBy[from];
-        // Increment id transfer count to clear delegations from DelegateRegistry
+        // Delete ownership of designated id "from" address
+        delete _ownedBy[from];
+        delete _ownerOf[id];
+        // Assign ownership of designated if "to" address
+        _ownedBy[to] = id;
+        _ownerOf[id] = to;
+        // Increment id transfer count to clear delegations + attesetations
         ++transferCountForId[id];
         // Clear pendingTransfer storage for given id
         delete pendingTransfers[id];
         // Clear existing attestation for id, if applicable
-        _unsafeRevokeAttestation(id);
+        _unsafeRevokeAttestation(id);        
         // Emit event for indexing
         emit TransferComplete(from, to, id);
     }
@@ -268,33 +278,29 @@ contract IdRegistry is IIdRegistry {
     /**
      * @inheritdoc IIdRegistry
      */     
-    function attest(bytes32 hash, bytes calldata sig, address signerOverride) external {
-        // Cache msg.sender
-        address sender = msg.sender;
-        // Reterieve id for sender
-        uint256 id = idOwnedBy[sender];      
+    function attest(address attestor, bytes32 hash, bytes calldata sig) external {
+        // Reterieve id owned by msg.sender
+        uint256 id = _ownedBy[msg.sender];      
         // Check if sender owns an id
         if (id == 0) revert Has_No_Id();
-        // Check if signerOveride for erc1271 contract account sig verification is present
-        if (signerOverride == address(0)) {
+        // Check if attestor address is an EOA
+        if (attestor.code.length == 0) {
             // Attempt to recover attestor address from EOA signature
-            address attestor = hash.recover(sig);    
+            address recoveredAttestor = hash.recover(sig);    
+            // Check recovered ttestor matches intended attestor
+            if (attestor != recoveredAttestor) revert Attestor_Mismatch();
             // Check they havent already attested for another id
-            if (attestedBy[attestor] != 0) revert Has_Attested();
-            // Store attestation - double storage so that attestations can be automtically cleared on id trasnfers
-            attestedBy[attestor] = id;
-            attestedFor[id] = attestor;
-            emit Attest(id, attestor);
+            if (attestedBy[recoveredAttestor] != 0) revert Has_Attested();           
+            // Store attestation
+            _unsafeGrantAttestation(id, recoveredAttestor);             
         } else {
-            // signerOveride was present, attempt ERC1271 signature verification
-            if (!SignatureChecker.isValidERC1271SignatureNow(signerOverride, hash, sig)) revert Invalid_Signature();
+            // Target attestor was NOT an EOA, attempt ERC1271 contract accountsignature verification
+            if (!SignatureChecker.isValidERC1271SignatureNow(attestor, hash, sig)) revert Invalid_Signature();
             // Check they havent already attested for another id
-            if (attestedBy[signerOverride] != 0) revert Has_Attested();            
-            // Store attestation - double storage so that attestations can be automtically cleared on id trasnfers
-            attestedBy[signerOverride] = id;
-            attestedFor[id] = signerOverride;
-            emit Attest(id, signerOverride);
-        } 
+            if (attestedBy[attestor] != 0) revert Has_Attested();            
+            // Store attestation
+            _unsafeGrantAttestation(id, attestor);                   
+        }
     }
 
     /**
@@ -315,9 +321,20 @@ contract IdRegistry is IIdRegistry {
     }        
 
     /**
+     * @dev Grant attestation for id without checking invariants
+     * @dev Two-way storage so that attestations can be cleared on id transfers
+     */   
+    function _unsafeGrantAttestation(uint256 id, address attestor) private {
+        attestedBy[attestor] = id;
+        attestedFor[id] = attestor;
+        emit Attest(id, attestor);
+    }
+
+    /**
      * @dev Revoke attestation for id without checking invariants
+     *      Will be a no-op if no active attestation for id
      */        
-    function _unsafeRevokeAttestation(uint256 id) internal {
+    function _unsafeRevokeAttestation(uint256 id) private {
         // Retrieve attestor address, if applicable
         address attestor = attestedFor[id];
         // If attestor != address(0), clear storage and emit revoke event
@@ -329,4 +346,24 @@ contract IdRegistry is IIdRegistry {
             emit RevokeAttestation(id, attestor);
         }
     }
+
+    //////////////////////////////////////////////////
+    // ERC721 METADATA
+    //////////////////////////////////////////////////     
+    
+    string public constant NAME = "ID_REGISTRY";
+    string public constant SYMBOL = "IDR";
+    IdRegistryRenderer public idRegistryRenderer;
+
+    constructor(address _idRegistryRenderer) {
+        idRegistryRenderer = IdRegistryRenderer(_idRegistryRenderer);
+    }
+
+    function tokenURI(uint256 id) public view override returns (string memory) {
+        return idRegistryRenderer.tokenURI(id);
+    }    
+
+    function contractURI() public view returns (string memory) {
+        return idRegistryRenderer.contractURI();
+    }    
 }

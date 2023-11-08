@@ -10,6 +10,7 @@ import {LightAccount} from "light-account/src/LightAccount.sol";
 import {LightAccountFactory} from "light-account/src/LightAccountFactory.sol";
 
 import {IdRegistry} from "../src/core/IdRegistry.sol";
+import {IdRegistryRenderer} from "../src/core/utils/IdRegistryRenderer.sol";
 
 // TODO: transfer + revokeAttestation related tests
 
@@ -34,6 +35,7 @@ contract IdRegistryTest is Test {
 
     /* IMP infra */
     IdRegistry public idRegistry;
+    IdRegistryRenderer public idRegistryRenderer;
 
     /* Smart account infra */
     EntryPoint public entryPoint;
@@ -52,7 +54,8 @@ contract IdRegistryTest is Test {
         eoa_attestor = makeAccount("attestor");
         eoa_malicious = makeAccount("malicious");
 
-        idRegistry = new IdRegistry();
+        idRegistryRenderer = new IdRegistryRenderer();
+        idRegistry = new IdRegistry(address(idRegistryRenderer));
 
         entryPoint = new EntryPoint();
         LightAccountFactory factory = new LightAccountFactory(entryPoint);
@@ -100,7 +103,7 @@ contract IdRegistryTest is Test {
         bytes memory signature = _sign(eoa_attestor.key, digest);
 
         // Call attest function, passing in signature from other keypair the user has access to
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(0))));   
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (eoa_attestor.addr, digest, signature)));   
 
         require(idRegistry.attestedBy(eoa_attestor.addr) == 1, "attestedBy set incorrectly");     
         require(idRegistry.attestedFor(1) == eoa_attestor.addr, "attestedFor set incorrectly");     
@@ -118,7 +121,7 @@ contract IdRegistryTest is Test {
         // Call attest function, passing in signature from other keypair the user has access to, which happens
         //      to be the owner of the second smart account that the owner of the first smart account wnats to
         //      verify ownership of for attest
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(account2))));     
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (address(account2), digest, signature)));     
 
         require(idRegistry.attestedBy(address(account2)) == 1, "attestedBy set incorrectly");     
         require(idRegistry.attestedFor(1) == address(account2), "attestedFor set incorrectly");         
@@ -137,7 +140,7 @@ contract IdRegistryTest is Test {
         // Should revert because eoa_malicious has no registered id to attest for
         // vm.expectRevert(abi.encodeWithSignature("Has_No_Id()"));
         vm.expectRevert();
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(0))));  
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (eoa_malicious.addr, digest, signature)));  
     }       
 
     function test_Revert_HasAttested_EOA_attest() public {
@@ -148,10 +151,10 @@ contract IdRegistryTest is Test {
         bytes32 digest = keccak256("attest_digest");
         bytes memory signature = _sign(eoa_attestor.key, digest);
         // Call attest function, passing in signature from other keypair the user has access to
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(0))));  
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (eoa_attestor.addr, digest, signature)));  
         // Should revert because attestor has already attested for this id
         vm.expectRevert(abi.encodeWithSignature("Has_Attested()"));
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(0))));   
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (eoa_attestor.addr, digest, signature)));   
         // TODO: add more scenarios when the attest call should revert (ex: for an id with no active attestor)
     }   
 
@@ -164,10 +167,10 @@ contract IdRegistryTest is Test {
         bytes memory signature = _sign(eoa_attestor.key, digest);
         // Call attest function, passing in signature from other keypair the user has access to
         
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(account2))));  
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (address(account2), digest, signature)));  
         // Should revert because attestor has already attested for this id
         vm.expectRevert(abi.encodeWithSignature("Has_Attested()"));
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (digest, signature, address(account2))));   
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (address(account2), digest, signature)));   
         // TODO: add more scenarios when the attest call should revert (ex: for an id with no active attestor)
     }            
 
@@ -182,7 +185,7 @@ contract IdRegistryTest is Test {
         bytes32 maliciousDigest = keccak256("malicious_digest");        
         // Should revert because of invalid signature due to incorrect digest swap
         vm.expectRevert(abi.encodeWithSignature("Invalid_Signature()"));        
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (maliciousDigest, signature, address(account2)))); 
+        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (address(account2), maliciousDigest, signature))); 
     }              
 
     //////////////////////////////////////////////////

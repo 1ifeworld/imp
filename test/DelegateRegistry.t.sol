@@ -43,7 +43,7 @@ contract DelegateRegistryTest is Test {
         eoa_owner = makeAccount("owner");
         eoa_delegate = makeAccount("delegate");
 
-        idRegistry = new IdRegistry();
+        idRegistry = new IdRegistry(address(0x123));
         delegateRegistry = new DelegateRegistry(address(idRegistry));
     }    
 
