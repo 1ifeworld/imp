@@ -117,11 +117,11 @@ interface IIdRegistry {
      * @dev     Can only be called by id owner
      * @dev     Hash MUST be the result of a keccack256 operation or risks vulnerability
      *  
+     * @param attestor       Included to allow for contract accounts to submit attestations     
      * @param hash           Hashed digest for sig verification process
      * @param sig            Signed message for sig verification process
-     * @param signerOverride Optional override to allow contract accounts to submit attestations
      */    
-    function attest(bytes32 hash, bytes calldata sig, address signerOverride) external;
+    function attest(address attestor, bytes32 hash, bytes calldata sig) external;
 
     /**
      * @notice  Revokes any existing attestation from a given account

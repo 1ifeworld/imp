@@ -18,17 +18,18 @@ interface INodeRegistry {
     function nodeCount() external view returns (uint256);
 
     /**
-     * @notice Tracks number of messages sent
+     * @notice Tracks number of updates sent
      */
-    function messageCount() external view returns (uint256);
+    function updateCount() external view returns (uint256);
 
     //////////////////////////////////////////////////
-    // NODE SCHEMA REGISTRATION
+    // CHEMA REGISTRATION
     //////////////////////////////////////////////////    
 
     /**
      * @notice Register a new schema by incrementing the schemaCount and emitting a
      *         unique hash of it. These hashes can be used to anchor schemas for nodeIds
+     *
      * @dev Callable by anyone
      *
      * @param data          Data to associate with RegisterSchema event
@@ -38,6 +39,7 @@ interface INodeRegistry {
     /**
      * @notice Register new schemas by incrementing the schemaCount and emitting a
      *         unique hashes of it. These hashes can be used to anchor schemas for nodeIds
+     *
      * @dev Callable by anyone
      *
      * @param datas         Data to associate with RegisterSchema events
@@ -45,41 +47,43 @@ interface INodeRegistry {
     function registerSchemaBatch(bytes[] calldata datas) external returns (bytes32[] memory);  
 
     //////////////////////////////////////////////////
-    // NODE ID REGISTRATION
+    // NODE INITIALIZATION
     //////////////////////////////////////////////////
 
     /**
-     * @notice Register a new node by incrementing the nodeCount and emitting data
-     *         in association with the registration event
+     * @notice Initialize a new node by incrementing the nodeCount and emitting data
+     *         in association with the initialization event
+     *
      * @dev Callable by anyone
      *
-     * @param data          Data to associate with RegisterNode event
+     * @param data          Data to associate with InitializeNode event
      */
-    function registerNode(bytes calldata data) external returns (uint256);
+    function initializeNode(bytes calldata data) external returns (uint256);
 
     /**
-     * @notice Batch version of `registerNode`
+     * @notice Batch version of `initializeNode`
      *
-     * @param datas         Data to associate with RegisterNode events
+     * @param datas         Data to associate with InitializeNode events
      */
-    function registerNodeBatch(bytes[] calldata datas) external returns (uint256[] memory);
+    function initializeNodeBatch(bytes[] calldata datas) external returns (uint256[] memory);
 
     //////////////////////////////////////////////////
-    // NODE MESSAGING
+    // NODE UPDATES
     //////////////////////////////////////////////////
 
     /**
-     * @notice Message a node by incrementing the messageCount and emitting data
+     * @notice Update a node by incrementing the updateCount and emitting data
+     *         in association with the update event 
      * @dev Callable by anyone
      *
-     * @param data          Data to associate with Message event
+     * @param data          Data to associate with UpdateNode event
      */
-    function messageNode(bytes calldata data) external returns (uint256);
+    function updateNode(bytes calldata data) external returns (uint256);
 
     /**
-     * @notice Batch version of `messageNode`
+     * @notice Batch version of `updateNode`
      *
-     * @param datas         Data to associate with each Message event
+     * @param datas         Data to associate with each UpdateNode event
      */
-    function messageNodeBatch(bytes[] calldata datas) external returns (uint256[] memory);
+    function updateNodeBatch(bytes[] calldata datas) external returns (uint256[] memory);
 }

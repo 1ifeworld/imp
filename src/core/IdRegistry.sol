@@ -15,7 +15,7 @@ import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/Signat
 contract IdRegistry is IIdRegistry {
 
     //////////////////////////////////////////////////
-    // CUSTOMIZATION
+    // TYPE CUSTOMIZATION
     //////////////////////////////////////////////////  
 
     /// @notice Adds hash.recover() functionality
@@ -36,6 +36,9 @@ contract IdRegistry is IIdRegistry {
 
     /// @dev Revert when caller is not designated transfer initiator
     error Not_Transfer_Initiator();
+
+    /// @dev Revert when desired attestor address does not match ECDSA recovered addresses
+    error Attestor_Mismatch();    
 
     /// @dev Revert when address has already attested for another id
     error Has_Attested();        
@@ -261,40 +264,36 @@ contract IdRegistry is IIdRegistry {
         potentially with similar transfer nonce pattern
     */
 
-    //////////////////////////////////////////////////
+//////////////////////////////////////////////////
     // ID ATTESTATION
     //////////////////////////////////////////////////                
 
     /**
      * @inheritdoc IIdRegistry
      */     
-    function attest(bytes32 hash, bytes calldata sig, address signerOverride) external {
-        // Cache msg.sender
-        address sender = msg.sender;
-        // Reterieve id for sender
-        uint256 id = idOwnedBy[sender];      
+    function attest(address attestor, bytes32 hash, bytes calldata sig) external {
+        // Reterieve id owned by msg.sender
+        uint256 id = idOwnedBy[msg.sender];      
         // Check if sender owns an id
         if (id == 0) revert Has_No_Id();
-        // Check if signerOveride for erc1271 contract account sig verification is present
-        if (signerOverride == address(0)) {
+        // Check if attestor address is an EOA
+        if (attestor.code.length == 0) {
             // Attempt to recover attestor address from EOA signature
-            address attestor = hash.recover(sig);    
+            address recoveredAttestor = hash.recover(sig);    
+            // Check recovered ttestor matches intended attestor
+            if (attestor != recoveredAttestor) revert Attestor_Mismatch();
             // Check they havent already attested for another id
-            if (attestedBy[attestor] != 0) revert Has_Attested();
-            // Store attestation - double storage so that attestations can be automtically cleared on id trasnfers
-            attestedBy[attestor] = id;
-            attestedFor[id] = attestor;
-            emit Attest(id, attestor);
+            if (attestedBy[recoveredAttestor] != 0) revert Has_Attested();           
+            // Store attestation
+            _unsafeGrantAttestation(id, recoveredAttestor);             
         } else {
-            // signerOveride was present, attempt ERC1271 signature verification
-            if (!SignatureChecker.isValidERC1271SignatureNow(signerOverride, hash, sig)) revert Invalid_Signature();
+            // Target attestor was NOT an EOA, attempt ERC1271 contract accountsignature verification
+            if (!SignatureChecker.isValidERC1271SignatureNow(attestor, hash, sig)) revert Invalid_Signature();
             // Check they havent already attested for another id
-            if (attestedBy[signerOverride] != 0) revert Has_Attested();            
-            // Store attestation - double storage so that attestations can be automtically cleared on id trasnfers
-            attestedBy[signerOverride] = id;
-            attestedFor[id] = signerOverride;
-            emit Attest(id, signerOverride);
-        } 
+            if (attestedBy[attestor] != 0) revert Has_Attested();            
+            // Store attestation
+            _unsafeGrantAttestation(id, attestor);                   
+        }
     }
 
     /**
@@ -315,9 +314,20 @@ contract IdRegistry is IIdRegistry {
     }        
 
     /**
+     * @dev Grant attestation for id without checking invariants
+     * @dev Two-way storage so that attestations can be cleared on id transfers
+     */   
+    function _unsafeGrantAttestation(uint256 id, address attestor) private {
+        attestedBy[attestor] = id;
+        attestedFor[id] = attestor;
+        emit Attest(id, attestor);
+    }
+
+    /**
      * @dev Revoke attestation for id without checking invariants
+     *      Will be a no-op if no active attestation for id
      */        
-    function _unsafeRevokeAttestation(uint256 id) internal {
+    function _unsafeRevokeAttestation(uint256 id) private {
         // Retrieve attestor address, if applicable
         address attestor = attestedFor[id];
         // If attestor != address(0), clear storage and emit revoke event

@@ -14,7 +14,7 @@ contract DelegateRegistryTest is Test {
     // EVENTS
     ////////////////////////////////////////////////// 
 
-    event Delegate(uint256 indexed id, uint256 nonce, address indexed target, bool status); 
+    event Delegate(uint256 indexed id, uint256 nonce, address indexed target, bool indexed status); 
 
     //////////////////////////////////////////////////
     // CONSTANTS
@@ -57,8 +57,8 @@ contract DelegateRegistryTest is Test {
         // call register on idRegistry
         idRegistry.register(mockRegisterBackup, zeroBytes);
         // expect emit
-        vm.expectEmit(true, true, true, false, address(delegateRegistry));
-        // emit what we expect
+        vm.expectEmit(true, true, true, true, address(delegateRegistry));
+        // // emit what we expect
         emit Delegate(1, 1, eoa_delegate.addr, true);
         // call updateDelegate on delegateRegistry
         delegateRegistry.updateDelegate(eoa_delegate.addr, true);
