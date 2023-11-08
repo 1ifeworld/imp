@@ -4,6 +4,7 @@ pragma solidity ^0.8.22;
 import {IdRegistry} from "../IdRegistry.sol";
 
 interface IDelegateRegistry {
+    
     //////////////////////////////////////////////////
     // CONSTANTS
     //////////////////////////////////////////////////    

@@ -3,8 +3,6 @@ pragma solidity ^0.8.22;
 
 import {INodeRegistry} from "./interfaces/INodeRegistry.sol";
 
-/// TODO: bump to sol 0.8.22
-
 /**
  * @title NodeRegistry
  * @author Lifeworld

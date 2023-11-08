@@ -3,18 +3,12 @@ pragma solidity ^0.8.22;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {IdRegistry} from "../src/core/IdRegistry.sol";
-import {DelegateRegistry} from "../src/core/DelegateRegistry.sol";
+import {IdRegistry} from "../src/IdRegistry.sol";
+import {DelegateRegistry} from "../src/DelegateRegistry.sol";
 
 // TODO: Add tests that confirm all delegates are cleared for a given id post id transfer
 
 contract DelegateRegistryTest is Test {       
-
-    //////////////////////////////////////////////////
-    // EVENTS
-    ////////////////////////////////////////////////// 
-
-    event Delegate(uint256 indexed id, uint256 nonce, address indexed target, bool indexed status); 
 
     //////////////////////////////////////////////////
     // CONSTANTS
@@ -59,7 +53,7 @@ contract DelegateRegistryTest is Test {
         // expect emit
         vm.expectEmit(true, true, true, true, address(delegateRegistry));
         // // emit what we expect
-        emit Delegate(1, 1, eoa_delegate.addr, true);
+        emit DelegateRegistry.Delegate(1, 1, eoa_delegate.addr, true);
         // call updateDelegate on delegateRegistry
         delegateRegistry.updateDelegate(eoa_delegate.addr, true);
         // check expected values

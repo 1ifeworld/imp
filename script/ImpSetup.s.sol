@@ -3,9 +3,9 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 
-import {IdRegistry} from "../src/core/IdRegistry.sol";
-import {NodeRegistry} from "../src/core/NodeRegistry.sol";
-import {DelegateRegistry} from "../src/core/DelegateRegistry.sol";
+import {IdRegistry} from "../src/IdRegistry.sol";
+import {NodeRegistry} from "../src/NodeRegistry.sol";
+import {DelegateRegistry} from "../src/DelegateRegistry.sol";
 
 contract ImpSetupScript is Script {
 

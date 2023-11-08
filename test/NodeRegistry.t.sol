@@ -3,17 +3,9 @@ pragma solidity ^0.8.22;
 
 import {Test, console2} from "forge-std/Test.sol";
 
-import {NodeRegistry} from "../src/core/NodeRegistry.sol";
+import {NodeRegistry} from "../src/NodeRegistry.sol";
 
-contract NodeRegistryTest is Test {
-
-    //////////////////////////////////////////////////
-    // EVENTS
-    //////////////////////////////////////////////////    
-
-    event RegisterSchema(address indexed sender, bytes32 indexed schema, bytes data);
-    event InitializeNode(address indexed sender, uint256 indexed nodeId, bytes data);
-    event UpdateNode(address indexed sender, uint256 indexed update, bytes data);        
+contract NodeRegistryTest is Test {       
 
     //////////////////////////////////////////////////
     // CONSTANTS
@@ -50,7 +42,7 @@ contract NodeRegistryTest is Test {
         // Checks if topics 1, 2, 3, non-indexed data and event emitter match expected emitter + event signature + event values
         vm.expectEmit(true, true, false, true, address(nodeRegistry));        
         // Emit event we are expecting
-        emit RegisterSchema(MOCK_USER_ACCOUNT, keccak256(abi.encode(block.chainid, address(nodeRegistry), expectedCount)), ZERO_BYTES);
+        emit NodeRegistry.RegisterSchema(MOCK_USER_ACCOUNT, keccak256(abi.encode(block.chainid, address(nodeRegistry), expectedCount)), ZERO_BYTES);
         // Perform call to emit event
         nodeRegistry.registerSchema(ZERO_BYTES);
         require(nodeRegistry.schemaCount() == expectedCount, "schemaCount not incremented correctly");

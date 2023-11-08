@@ -4,8 +4,6 @@ pragma solidity ^0.8.22;
 import {IDelegateRegistry} from "./interfaces/IDelegateRegistry.sol";
 import {IdRegistry} from "./IdRegistry.sol";
 
-/// TODO: bump to sol 0.8.22
-
 /**
  * @title DelegateRegistry
  * @author Lifeworld

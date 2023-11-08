@@ -6,7 +6,6 @@ import {ECDSA} from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
 
 /// TODO: Missing id recovery functionality
-/// TODO: bump to sol 0.8.22
 
 /**
  * @title IdRegistry
