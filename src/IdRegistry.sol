@@ -14,13 +14,6 @@ import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/Signat
 contract IdRegistry is IIdRegistry {
 
     //////////////////////////////////////////////////
-    // TYPE CUSTOMIZATION
-    //////////////////////////////////////////////////  
-
-    /// @notice Adds hash.recover() functionality
-    using ECDSA for bytes32;
-
-    //////////////////////////////////////////////////
     // ERRORS
     //////////////////////////////////////////////////   
 
@@ -127,26 +120,11 @@ contract IdRegistry is IIdRegistry {
     mapping(uint256 => address) public backupForId;    
 
     /**
-     * @inheritdoc IIdRegistry
-     */  
-    mapping(uint256 => uint256) public transferCountForId;
-
-    /**
      * @dev Stores pendingTransfers info for all ids
      *
      * @custom:param id     Numeric id
      */
     mapping(uint256 => PendingTransfer) public pendingTransfers;
-
-    /**
-     * @inheritdoc IIdRegistry
-     */      
-    mapping(address => uint256) public attestedBy;    
-
-    /**
-     * @inheritdoc IIdRegistry
-     */      
-    mapping(uint256 => address) public attestedFor;    
 
     //////////////////////////////////////////////////
     // VIEWS
@@ -157,7 +135,7 @@ contract IdRegistry is IIdRegistry {
      */  
     function transferPendingForId(uint256 id) external view returns (PendingTransfer memory) {
         return pendingTransfers[id];
-    }
+    }    
 
     //////////////////////////////////////////////////
     // ID REGISTRATION
@@ -173,8 +151,6 @@ contract IdRegistry is IIdRegistry {
         if (idOwnedBy[sender] != 0) revert Has_Id();    
         // Increment idCount
         id = ++idCount;
-        // Increment transfer count for target id. Registration will always be 0 => 1
-        ++transferCountForId[id];
         // Assign id to owner
         idOwnedBy[sender] = id;
         // Assign backup to id
@@ -235,16 +211,12 @@ contract IdRegistry is IIdRegistry {
      * @dev Transfer id without checking invariants
      */    
     function _unsafeTransfer(uint256 id, address from, address to) internal {
+        // Delete ownership of designated id from "from" address
+        delete idOwnedBy[from];        
         // Assign ownership of designated id to "to" address
         idOwnedBy[to] = id;
-        // Delete ownership of designated id from "from" address
-        delete idOwnedBy[from];
-        // Increment id transfer count to clear delegations from DelegateRegistry
-        ++transferCountForId[id];
         // Clear pendingTransfer storage for given id
         delete pendingTransfers[id];
-        // Clear existing attestation for id, if applicable
-        _unsafeRevokeAttestation(id);
         // Emit event for indexing
         emit TransferComplete(from, to, id);
     }
@@ -262,80 +234,4 @@ contract IdRegistry is IIdRegistry {
         also need to add in a "change backup address" function,
         potentially with similar transfer nonce pattern
     */
-
-//////////////////////////////////////////////////
-    // ID ATTESTATION
-    //////////////////////////////////////////////////                
-
-    /**
-     * @inheritdoc IIdRegistry
-     */     
-    function attest(address attestor, bytes32 hash, bytes calldata sig) external {
-        // Reterieve id owned by msg.sender
-        uint256 id = idOwnedBy[msg.sender];      
-        // Check if sender owns an id
-        if (id == 0) revert Has_No_Id();
-        // Check if attestor address is an EOA
-        if (attestor.code.length == 0) {
-            // Attempt to recover attestor address from EOA signature
-            address recoveredAttestor = hash.recover(sig);    
-            // Check recovered ttestor matches intended attestor
-            if (attestor != recoveredAttestor) revert Attestor_Mismatch();
-            // Check they havent already attested for another id
-            if (attestedBy[recoveredAttestor] != 0) revert Has_Attested();           
-            // Store attestation
-            _unsafeGrantAttestation(id, recoveredAttestor);             
-        } else {
-            // Target attestor was NOT an EOA, attempt ERC1271 contract accountsignature verification
-            if (!SignatureChecker.isValidERC1271SignatureNow(attestor, hash, sig)) revert Invalid_Signature();
-            // Check they havent already attested for another id
-            if (attestedBy[attestor] != 0) revert Has_Attested();            
-            // Store attestation
-            _unsafeGrantAttestation(id, attestor);                   
-        }
-    }
-
-    /**
-     * @inheritdoc IIdRegistry
-     */      
-    function revokeAttestation() external {
-        // Cache msg.sender
-        address sender = msg.sender;
-        // Retrieve attested id, if applicable
-        uint256 id = attestedBy[sender];
-        // Revert if id = 0;
-        if (id == 0) revert No_Active_Attestation();
-        // Clear attestation storage
-        delete attestedBy[sender];
-        delete attestedFor[id];
-        // Emit for indexing
-        emit RevokeAttestation(id, sender);
-    }        
-
-    /**
-     * @dev Grant attestation for id without checking invariants
-     * @dev Two-way storage so that attestations can be cleared on id transfers
-     */   
-    function _unsafeGrantAttestation(uint256 id, address attestor) private {
-        attestedBy[attestor] = id;
-        attestedFor[id] = attestor;
-        emit Attest(id, attestor);
-    }
-
-    /**
-     * @dev Revoke attestation for id without checking invariants
-     *      Will be a no-op if no active attestation for id
-     */        
-    function _unsafeRevokeAttestation(uint256 id) private {
-        // Retrieve attestor address, if applicable
-        address attestor = attestedFor[id];
-        // If attestor != address(0), clear storage and emit revoke event
-        if (attestor != address(0)) {
-            // Clear attestation storage
-            delete attestedBy[attestor];
-            delete attestedFor[id];
-            // Emit for indexing
-            emit RevokeAttestation(id, attestor);
-        }
-    }
 }

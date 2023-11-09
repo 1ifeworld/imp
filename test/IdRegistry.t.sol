@@ -11,7 +11,7 @@ import {LightAccountFactory} from "light-account/src/LightAccountFactory.sol";
 
 import {IdRegistry} from "../src/IdRegistry.sol";
 
-// TODO: transfer + revokeAttestation related tests
+// TODO: transfer + recovery related tests
 
 contract IdRegistryTest is Test {       
 
@@ -19,7 +19,6 @@ contract IdRegistryTest is Test {
     // CONSTANTS
     //////////////////////////////////////////////////   
 
-    bytes4 public constant EIP1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
     address public constant MOCK_REGISTER_BACKUP = address(0x123);
     bytes public constant ZERO_BYTES = new bytes(0);
 
@@ -49,7 +48,6 @@ contract IdRegistryTest is Test {
     // Set-up called before each test
     function setUp() public {
         eoaOwner = makeAccount("owner");
-        eoaAttestor = makeAccount("attestor");
         eoaMalicious = makeAccount("malicious");
 
         idRegistry = new IdRegistry();
@@ -58,7 +56,6 @@ contract IdRegistryTest is Test {
         LightAccountFactory factory = new LightAccountFactory(entryPoint);
 
         account = factory.createAccount(eoaOwner.addr, salt);
-        account2 = factory.createAccount(eoaAttestor.addr, salt);
     }    
 
     //////////////////////////////////////////////////
@@ -72,7 +69,6 @@ contract IdRegistryTest is Test {
         account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (MOCK_REGISTER_BACKUP, ZERO_BYTES)));
         require(idRegistry.idCount() == 1, "id count not incremented correctly");
         require(idRegistry.idOwnedBy(address(account)) == 1, "id 1 not registered correctly");
-        require(idRegistry.transferCountForId(1) == 1, "transfer count not incremented correctly");
         require(idRegistry.backupForId(1) == MOCK_REGISTER_BACKUP, "id backup not set correctly");
     }
 
@@ -84,106 +80,7 @@ contract IdRegistryTest is Test {
         // expect revert because account can only have one id registered at a time
         vm.expectRevert(abi.encodeWithSignature("Has_Id()"));
         account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (MOCK_REGISTER_BACKUP, ZERO_BYTES)));
-    }    
-
-    //////////////////////////////////////////////////
-    // ATTEST TESTS
-    //////////////////////////////////////////////////       
-
-    function test_EOA_attest() public {
-        vm.startPrank(eoaOwner.addr); 
-        // Register id 1 to 
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (MOCK_REGISTER_BACKUP, ZERO_BYTES)));
-
-        // Generate digest + signature for attest call
-        bytes32 digest = keccak256("attest_digest");
-        bytes memory signature = _sign(eoaAttestor.key, digest);
-
-        // Call attest function, passing in signature from other keypair the user has access to
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (eoaAttestor.addr, digest, signature)));   
-
-        require(idRegistry.attestedBy(eoaAttestor.addr) == 1, "attestedBy set incorrectly");     
-        require(idRegistry.attestedFor(1) == eoaAttestor.addr, "attestedFor set incorrectly");     
-    }
-
-    function test_SmartAccount_attest() public {
-        vm.startPrank(eoaOwner.addr); 
-        // Register id 1 to account
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (MOCK_REGISTER_BACKUP, ZERO_BYTES)));
-
-        // Generate digest + signature for attest call
-        bytes32 digest = keccak256("attest_digest");
-        bytes memory signature = _sign(eoaAttestor.key, digest);
-
-        // Call attest function, passing in signature from other keypair the user has access to, which happens
-        //      to be the owner of the second smart account that the owner of the first smart account wnats to
-        //      verify ownership of for attest
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (address(account2), digest, signature)));     
-
-        require(idRegistry.attestedBy(address(account2)) == 1, "attestedBy set incorrectly");     
-        require(idRegistry.attestedFor(1) == address(account2), "attestedFor set incorrectly");         
-    }    
-
-    // NOTE: test is reverting but cant get it to verify its because of the "Has_No_Id" revert
-    function test_Revert_HasNoId_attest() public {
-        vm.startPrank(eoaOwner.addr); 
-        // Register id 1 to account
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (MOCK_REGISTER_BACKUP, ZERO_BYTES)));
-        vm.stopPrank();
-        vm.startPrank(eoaMalicious.addr);
-        // Generate digest + signature for attest call
-        bytes32 digest = keccak256("attest_digest");
-        bytes memory signature = _sign(eoaMalicious.key, digest);
-        // Should revert because eoaMalicious has no registered id to attest for
-        // vm.expectRevert(abi.encodeWithSignature("Has_No_Id()"));
-        vm.expectRevert();
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (eoaMalicious.addr, digest, signature)));  
-    }       
-
-    function test_Revert_HasAttested_EOA_attest() public {
-        vm.startPrank(eoaOwner.addr); 
-        // Register id 1 to account
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (MOCK_REGISTER_BACKUP, ZERO_BYTES)));
-        // Generate digest + signature for attest call
-        bytes32 digest = keccak256("attest_digest");
-        bytes memory signature = _sign(eoaAttestor.key, digest);
-        // Call attest function, passing in signature from other keypair the user has access to
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (eoaAttestor.addr, digest, signature)));  
-        // Should revert because attestor has already attested for this id
-        vm.expectRevert(abi.encodeWithSignature("Has_Attested()"));
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (eoaAttestor.addr, digest, signature)));   
-        // TODO: add more scenarios when the attest call should revert (ex: for an id with no active attestor)
-    }   
-
-    function test_Revert_HasAttested_SmartAccount_attest() public {
-        vm.startPrank(eoaOwner.addr); 
-        // Register id 1 to account
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (MOCK_REGISTER_BACKUP, ZERO_BYTES)));
-        // Generate digest + signature for attest call
-        bytes32 digest = keccak256("attest_digest");
-        bytes memory signature = _sign(eoaAttestor.key, digest);
-        // Call attest function, passing in signature from other keypair the user has access to
-        
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (address(account2), digest, signature)));  
-        // Should revert because attestor has already attested for this id
-        vm.expectRevert(abi.encodeWithSignature("Has_Attested()"));
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (address(account2), digest, signature)));   
-        // TODO: add more scenarios when the attest call should revert (ex: for an id with no active attestor)
-    }            
-
-    function test_Revert_InvalidSignature_SmartAccount_attest() public {
-        vm.startPrank(eoaOwner.addr); 
-        // Register id 1 to account
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.register, (MOCK_REGISTER_BACKUP, ZERO_BYTES)));
-        // Generate digest + signature for attest call
-        bytes32 digest = keccak256("attest_digest");
-        bytes memory signature = _sign(eoaAttestor.key, digest);
-        // Change digest, but not signature, to cause error
-        bytes32 maliciousDigest = keccak256("malicious_digest");        
-        // Should revert because of invalid signature due to incorrect digest swap
-        vm.expectRevert(abi.encodeWithSignature("Invalid_Signature()"));        
-        account.execute(address(idRegistry), 0, abi.encodeCall(IdRegistry.attest, (address(account2), maliciousDigest, signature))); 
-    }              
+    }      
 
     //////////////////////////////////////////////////
     // TRANSFER TESTS
@@ -192,17 +89,8 @@ contract IdRegistryTest is Test {
     // TODO
 
     //////////////////////////////////////////////////
-    // REVOKE ATTESTATION TESTS
+    // RECOVERY TESTS
     //////////////////////////////////////////////////   
 
     // TODO
-
-    //////////////////////////////////////////////////
-    // HELPERS FROM ALCHEMY -- LIGHT ACCOUNT TESTS
-    //////////////////////////////////////////////////  
-
-    function _sign(uint256 privateKey, bytes32 digest) internal pure returns (bytes memory) {
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
-        return abi.encodePacked(r, s, v);
-    }
 }

@@ -38,24 +38,9 @@ interface IIdRegistry {
     function backupForId(uint256 id) external view returns (address);
 
     /**
-     * @notice Tracks number of times a given id has been transferred (registration included)
-     */
-    function transferCountForId(uint256 id) external view returns (uint256);
-
-    /**
      * @notice Tracks pendingTransfer info for given id
      */
-    function transferPendingForId(uint256 id) external view returns (PendingTransfer memory);    
-
-    /**
-     * @notice Tracks id attested for by a given account
-     */      
-    function attestedBy(address attestor) external view returns (uint256);      
-
-    /**
-     * @notice Tracks attestor address for a given id
-     */      
-    function attestedFor(uint256 id) external view returns (address);       
+    function transferPendingForId(uint256 id) external view returns (PendingTransfer memory);      
 
     //////////////////////////////////////////////////
     // ID REGISTRATION
@@ -107,27 +92,5 @@ interface IIdRegistry {
     // ID RECOVERY
     //////////////////////////////////////////////////
 
-    /// TODO: Missing
-
-    //////////////////////////////////////////////////
-    // ID ATTESTATION
-    //////////////////////////////////////////////////
-
-    /**
-     * @notice  Allows id owner to prove they are in control of another account
-     * @dev     Can only be called by id owner
-     * @dev     Hash MUST be the result of a keccack256 operation or risks vulnerability
-     *  
-     * @param attestor       Included to allow for contract accounts to submit attestations     
-     * @param hash           Hashed digest for sig verification process
-     * @param sig            Signed message for sig verification process
-     */    
-    function attest(address attestor, bytes32 hash, bytes calldata sig) external;
-
-    /**
-     * @notice  Revokes any existing attestation from a given account
-     * @dev     Reverts if no existing attestation for msg.sender
-     * @dev     Callable by anyine
-     */    
-    function revokeAttestation() external;
+    /// TODO: Missing recovery functionality
 }

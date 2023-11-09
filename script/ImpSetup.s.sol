@@ -6,12 +6,14 @@ import "forge-std/Script.sol";
 import {IdRegistry} from "../src/IdRegistry.sol";
 import {NodeRegistry} from "../src/NodeRegistry.sol";
 import {DelegateRegistry} from "../src/DelegateRegistry.sol";
+import {AttestationRegistry} from "../src/AttestationRegistry.sol";
 
 contract ImpSetupScript is Script {
 
     IdRegistry idRegistry;
     NodeRegistry nodeRegistry;
     DelegateRegistry delegateRegistry;    
+    AttestationRegistry attestationRegistry;    
     
     function setUp() public {}
 
@@ -26,7 +28,8 @@ contract ImpSetupScript is Script {
 
         nodeRegistry = new NodeRegistry();
         idRegistry = new IdRegistry();
-        delegateRegistry = new DelegateRegistry(address(idRegistry));
+        delegateRegistry = new DelegateRegistry();
+        attestationRegistry = new AttestationRegistry();
 
         vm.stopBroadcast();
     }
