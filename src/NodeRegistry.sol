@@ -33,10 +33,11 @@ contract NodeRegistry is INodeRegistry {
      *      affective filtering of the entire data set produced via the registry
      *
      * @param sender        Address of the account calling `initializeNode()`
+     * @param schema        Schema initializing node as
      * @param nodeId        NodeId being initialized
-     * @param data          Data to associate with the initialization of a new nodeId
+     * @param messages       Message to send to node being initialized
      */
-    event InitializeNode(address indexed sender, uint256 indexed nodeId, bytes data);
+    event InitializeNode(address indexed sender, bytes32 indexed schema, uint256 indexed nodeId, bytes[] messages);
 
     /**
      * @dev Emit an event when a new update is sent
@@ -75,30 +76,30 @@ contract NodeRegistry is INodeRegistry {
     // SCHEMA REGISTRATION
     //////////////////////////////////////////////////
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function registerSchema(bytes calldata data) external returns (bytes32 schema) {
-        // Increments schemaCount before hash generation
-        schema = keccak256(abi.encode(block.chainid, address(this), ++schemaCount));
-        emit RegisterSchema(msg.sender, schema, data);
-    }
+    // /**
+    //  * @inheritdoc INodeRegistry
+    //  */
+    // function registerSchema(bytes calldata data) external returns (bytes32 schema) {
+    //     // Increments schemaCount before hash generation
+    //     schema = keccak256(abi.encode(block.chainid, address(this), ++schemaCount));
+    //     emit RegisterSchema(msg.sender, schema, data);
+    // }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function registerSchemaBatch(bytes[] calldata datas) external returns (bytes32[] memory schemas) {
-        // Cache msg.sender
-        address sender = msg.sender;
-        // Assign return data length
-        schemas = new bytes32[](datas.length);
-        for (uint256 i; i < datas.length; ++i) {
-            // Increments schemaCount before hash generation
-            schemas[i] = keccak256(abi.encode(block.chainid, address(this), ++schemaCount));
-            // Emit for indexing
-            emit RegisterSchema(sender, schemas[i], datas[i]);
-        }
-    }
+    // /**
+    //  * @inheritdoc INodeRegistry
+    //  */
+    // function registerSchemaBatch(bytes[] calldata datas) external returns (bytes32[] memory schemas) {
+    //     // Cache msg.sender
+    //     address sender = msg.sender;
+    //     // Assign return data length
+    //     schemas = new bytes32[](datas.length);
+    //     for (uint256 i; i < datas.length; ++i) {
+    //         // Increments schemaCount before hash generation
+    //         schemas[i] = keccak256(abi.encode(block.chainid, address(this), ++schemaCount));
+    //         // Emit for indexing
+    //         emit RegisterSchema(sender, schemas[i], datas[i]);
+    //     }
+    // }
 
     //////////////////////////////////////////////////
     // NODE REGISTRATION
@@ -107,25 +108,25 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    function initializeNode(bytes calldata data) external returns (uint256 nodeId) {
+    function initializeNode(bytes32 schema, bytes[] calldata messages) external returns (uint256 nodeId) {
         // Increments nodeCount before event emission
         nodeId = ++nodeCount;
-        emit InitializeNode(msg.sender, nodeId, data);
+        emit InitializeNode(msg.sender, schema, nodeId, messages);
     }
 
     /**
      * @inheritdoc INodeRegistry
      */
-    function initializeNodeBatch(bytes[] calldata datas) external returns (uint256[] memory nodeIds) {
+    function initializeNodeBatch(bytes32[] calldata schemas, bytes[][] calldata messages) external returns (uint256[] memory nodeIds) {
         // Cache msg.sender
         address sender = msg.sender;
         // Assign return data length
-        nodeIds = new uint256[](datas.length);
-        for (uint256 i; i < datas.length; ++i) {
+        nodeIds = new uint256[](schemas.length);
+        for (uint256 i; i < schemas.length; ++i) {
             // Copy nodeId to return variable
             nodeIds[i] = ++nodeCount;
             // Increments nodeCount before event emission
-            emit InitializeNode(sender, nodeIds[i], datas[i]);
+            emit InitializeNode(sender, schemas[i], nodeIds[i], messages[i]);
         }
     }
 
@@ -133,30 +134,30 @@ contract NodeRegistry is INodeRegistry {
     // NODE MESSAGING
     //////////////////////////////////////////////////
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function updateNode(bytes calldata data) external returns (uint256 updateId) {
-        // Increments updateCount before event emission
-        updateId = ++updateCount;
-        emit UpdateNode(msg.sender, updateId, data);
-    }
+    // /**
+    //  * @inheritdoc INodeRegistry
+    //  */
+    // function updateNode(bytes calldata data) external returns (uint256 updateId) {
+    //     // Increments updateCount before event emission
+    //     updateId = ++updateCount;
+    //     emit UpdateNode(msg.sender, updateId, data);
+    // }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function updateNodeBatch(bytes[] calldata datas) external returns (uint256[] memory updateIds) {
-        // Cache msg.sender
-        address sender = msg.sender;
-        // Assign return data length
-        updateIds = new uint256[](datas.length);
-        for (uint256 i; i < datas.length; ++i) {
-            // Increment updateCount and copy to return variable
-            updateIds[i] = ++updateCount;
-            // Emit Message event
-            emit UpdateNode(sender, updateIds[i], datas[i]);
-        }
-    }
+    // /**
+    //  * @inheritdoc INodeRegistry
+    //  */
+    // function updateNodeBatch(bytes[] calldata datas) external returns (uint256[] memory updateIds) {
+    //     // Cache msg.sender
+    //     address sender = msg.sender;
+    //     // Assign return data length
+    //     updateIds = new uint256[](datas.length);
+    //     for (uint256 i; i < datas.length; ++i) {
+    //         // Increment updateCount and copy to return variable
+    //         updateIds[i] = ++updateCount;
+    //         // Emit Message event
+    //         emit UpdateNode(sender, updateIds[i], datas[i]);
+    //     }
+    // }
 }
 
 /*
