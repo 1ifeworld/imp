@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity 0.8.23;
 
 interface IIdRegistry {
     
@@ -35,7 +35,7 @@ interface IIdRegistry {
     /**
      * @notice Tracks backup address registered to a given id
      */
-    function backupForId(uint256 id) external view returns (address);
+    function backupFor(uint256 id) external view returns (address);
 
     /**
      * @notice Tracks pendingTransfer info for given id

@@ -1,44 +1,91 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.22;
+pragma solidity 0.8.23;
+
+import {IDelegateRegistry} from "./interfaces/IDelegateRegistry.sol";
+import {IdRegistry} from "./IdRegistry.sol";
 
 /**
  * @title DelegateRegistry
  * @author Lifeworld
  */
-contract DelegateRegistry {
+contract DelegateRegistry is IDelegateRegistry {
 
-    // TODO:
-    // Consider adding "delegateFor" event. which can be called by anyone
-    // and must pass through a valid signature check for a given "for" address/id
+    //////////////////////////////////////////////////
+    // ERRORS
+    //////////////////////////////////////////////////   
+
+    /// @dev Revert when the caller must have an id but does not have one.
+    error Has_No_Id();    
 
     //////////////////////////////////////////////////
     // EVENTS
     //////////////////////////////////////////////////       
 
-    event Delegate(address indexed from, address indexed to, bool indexed status, uint256 timestamp); 
+    /**
+     * @dev Emit an event when an id grants a delegation
+     *
+     *      Id owners can toggle the delegation status of any address to create messages
+     *      in the NodeRegistry on its behalf
+     *
+     * @param id            The id granting delegation
+     * @param target        Address receiving delegation
+     * @param status        T/F of delegation status
+     */
+    event Delegate(uint256 indexed id, address indexed target, bool indexed status); 
 
     //////////////////////////////////////////////////
-    // ATTEST
+    // CONSTRUCTOR
+    //////////////////////////////////////////////////         
+
+    /**
+     * @notice Specify address of idRegistry
+     *
+     * @param _idRegistry IdRegistry address
+     *
+     */
+    constructor(address _idRegistry) {
+        idRegistry = IdRegistry(_idRegistry);
+    }
+
+    //////////////////////////////////////////////////
+    // CONSTANTS
+    //////////////////////////////////////////////////   
+
+    /**
+     * @inheritdoc IDelegateRegistry
+     */
+    IdRegistry immutable public idRegistry;
+
+    //////////////////////////////////////////////////
+    // STORAGE
+    //////////////////////////////////////////////////        
+
+    /**
+     * @inheritdoc IDelegateRegistry
+     */    
+    mapping(uint256 => mapping(address => bool)) public idDelegates;
+
+    //////////////////////////////////////////////////
+    // ID DELEGATION
     //////////////////////////////////////////////////    
 
-    /*
-        HOW DOES INCLUSION WORK?
+    /**
+     * @inheritdoc IDelegateRegistry
+     */
+    function updateDelegate(address target, bool status) external {
+        // Retrieve id for msg.sender
+        uint256 id = idRegistry.idOwnedBy(msg.sender);
+        // Check if sender has an id
+        if (id == 0) revert Has_No_Id();
+        // Delegate to target for given id 
+        idDelegates[id][target] = status;
+        emit Delegate(id, target, status);
+    }
 
-        ** Indexer must be synced with most up to date IdRegistry address as specified in IMP
-
-        1. lookup id for msg.sender.
-            - if (idRegistry.idOwnedBy(msg.sender == 0)) REVERT()
-        2. look up existing delegations for id in data store. 
-            - if inputted status boolean is already present for id, REVERT()
-        3. look up most recent Register/Transfer/Recovery timestamp for id
-            - if event reg/trsnf/recov timestamp > inputted timestamp, REVERT()
-        4. check if inputted timestamp is within 24 hours of the Delegate event emission
-            - if Delegate timestamp + 24 hours < inputted timestamp, REVERT() 
-        5. update delegate data store for given id, marking "to" address as the inputted status boolean 
-
-    */
-    
-    function delegate(address to, bool status, uint256 timestamp) external {
-        emit Delegate(msg.sender, to, status, timestamp);
+    /**
+     * @inheritdoc IDelegateRegistry
+     */
+    function isDelegate(uint256 id, address target) external view returns (bool delegateStatus) {
+        delegateStatus = idDelegates[id][target];
     }
 }

@@ -1,5 +1,6 @@
 {
-    "IdRegistry": "0xf89a7C9a0517da815dB66CdcAf61F44E01476697",
-    "DelegateRegistry": "0x995D4621B4B72cd2805f99972A1313bd9876c613",
-    "NodeRegistry": "0xd8Dbf7dC3746B968485164c05b5c11C78a2BFebc"
+    "IdRegistry": "0xD1afC5DBC6870b17e598273dB2cC6bbA9233b905",
+    "NodeRegistry": "0x1CD1C924F9844d9e97ae07927fae9340C9D02f83",
+    "DelegateRegistry": "0x513B15394BFd615fF4efFBFb4ee3DBFF641D63F8",
+    "AttestationRegistry": "0x6d8313bBac1C0596Ff115DE28c8E0E4d3328DbE3"
 }

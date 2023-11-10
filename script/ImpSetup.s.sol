@@ -28,7 +28,7 @@ contract ImpSetupScript is Script {
 
         nodeRegistry = new NodeRegistry();
         idRegistry = new IdRegistry();
-        delegateRegistry = new DelegateRegistry();
+        delegateRegistry = new DelegateRegistry(address(idRegistry));
         attestationRegistry = new AttestationRegistry();
 
         vm.stopBroadcast();
