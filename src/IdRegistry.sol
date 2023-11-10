@@ -242,14 +242,4 @@ contract IdRegistry is IIdRegistry {
         // Emit for indexing
         emit Backup(from, to, id);
     }
-
-    /* 
-        NOTE: initial ideas
-        
-        Basically same thing as transfer process but can be triggered
-        by previously set "backup" address for given id
-
-        also need to add in a "change backup address" function,
-        potentially with similar transfer nonce pattern
-    */
 }
