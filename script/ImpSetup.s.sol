@@ -10,10 +10,10 @@ import {AttestationRegistry} from "../src/AttestationRegistry.sol";
 
 contract ImpSetupScript is Script {
 
-    IdRegistry idRegistry;
-    NodeRegistry nodeRegistry;
-    DelegateRegistry delegateRegistry;    
-    AttestationRegistry attestationRegistry;    
+    IdRegistry public idRegistry;
+    NodeRegistry public nodeRegistry;
+    DelegateRegistry public delegateRegistry;    
+    AttestationRegistry public attestationRegistry;    
     
     function setUp() public {}
 
