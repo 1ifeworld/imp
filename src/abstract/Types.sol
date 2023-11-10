@@ -7,7 +7,7 @@ abstract contract Types {
     // GENERIC
     //////////////////////////////////////////////////
 
-    function exportType_Message() external pure returns (uint256 userId, uint256 msgType, bytes memory msgBody) {
+    function exportType_000_Message() external pure returns (uint256 userId, uint256 msgType, bytes memory msgBody) {
         return (userId, msgType, msgBody);
     }
 
@@ -15,7 +15,7 @@ abstract contract Types {
     // ACCESS CONTROL
     //////////////////////////////////////////////////
 
-    function exportType_Access_AdminWithMembers() external pure returns (uint256[] memory admins, uint256[] memory members) {
+    function exportType_101_Access_AdminWithMembers() external pure returns (uint256[] memory admins, uint256[] memory members) {
         return (admins, members);
     }
 
@@ -23,7 +23,7 @@ abstract contract Types {
     // PUBLICATION
     //////////////////////////////////////////////////    
 
-    function exportType_Publication_SetUri() external pure returns (string memory uri) {
+    function exportType_201_Publication_SetUri() external pure returns (string memory uri) {
         return (uri);
     }    
 
@@ -31,15 +31,15 @@ abstract contract Types {
     // CHANNEL
     //////////////////////////////////////////////////   
 
-    function exportType_Channel_SetUri() external pure returns (string memory uri) {
+    function exportType_301_Channel_SetUri() external pure returns (string memory uri) {
         return (uri);
     }        
 
-    function exportType_Channel_AddItem() external pure returns (uint256 chainId, uint256 id, address pointer, bool hasId) {
+    function exportType_302_Channel_AddItem() external pure returns (uint256 chainId, uint256 id, address pointer, bool hasId) {
         return (chainId, id, pointer, hasId);
     }          
 
-    function exportType_Channel_RemoveItem() external pure returns (uint256 channelIndex) {
+    function exportType_303_Channel_RemoveItem() external pure returns (uint256 channelIndex) {
         return (channelIndex);
     }         
 }
