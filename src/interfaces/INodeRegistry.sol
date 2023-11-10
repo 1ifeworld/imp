@@ -50,24 +50,24 @@ interface INodeRegistry {
     // NODE INITIALIZATION
     //////////////////////////////////////////////////
 
-    /**
-     * @notice Initialize a new node by incrementing the nodeCount and emitting data
-     *         in association with the initialization event
-     *
-     * @dev Callable by anyone
-     *
-     * @param schema        Schema initialize node as
-     * @param messages      Messages to send to initialized node
-     */
-    function initializeNode(bytes32 schema, bytes[] calldata messages) external returns (uint256);
+    // /**
+    //  * @notice Initialize a new node by incrementing the nodeCount and emitting data
+    //  *         in association with the initialization event
+    //  *
+    //  * @dev Callable by anyone
+    //  *
+    //  * @param schema        Schema initialize node as
+    //  * @param messages      Messages to send to initialized node
+    //  */
+    // function initializeNode(bytes32 schema, bytes[] calldata messages) external returns (uint256);
 
-    /**
-     * @notice Batch version of `initializeNode`
-     *
-     * @param schemas       Schemas to initialize nodes as
-     * @param messages      Messages to send to initialized nodes
-     */
-    function initializeNodeBatch(bytes32[] calldata schemas, bytes[][] calldata messages) external returns (uint256[] memory);
+    // /**
+    //  * @notice Batch version of `initializeNode`
+    //  *
+    //  * @param schemas       Schemas to initialize nodes as
+    //  * @param messages      Messages to send to initialized nodes
+    //  */
+    // function initializeNodeBatch(bytes32[] calldata schemas, bytes[][] calldata messages) external returns (uint256[] memory);
 
     //////////////////////////////////////////////////
     // NODE UPDATES

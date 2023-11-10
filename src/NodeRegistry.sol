@@ -35,7 +35,7 @@ contract NodeRegistry is INodeRegistry {
      * @param sender        Address of the account calling `initializeNode()`
      * @param schema        Schema initializing node as
      * @param nodeId        NodeId being initialized
-     * @param messages       Message to send to node being initialized
+     * @param messages        Messages
      */
     event InitializeNode(address indexed sender, bytes32 indexed schema, uint256 indexed nodeId, bytes[] messages);
 
@@ -105,30 +105,28 @@ contract NodeRegistry is INodeRegistry {
     // NODE REGISTRATION
     //////////////////////////////////////////////////
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
+
     function initializeNode(bytes32 schema, bytes[] calldata messages) external returns (uint256 nodeId) {
         // Increments nodeCount before event emission
         nodeId = ++nodeCount;
         emit InitializeNode(msg.sender, schema, nodeId, messages);
     }
 
-    /**
-     * @inheritdoc INodeRegistry
-     */
-    function initializeNodeBatch(bytes32[] calldata schemas, bytes[][] calldata messages) external returns (uint256[] memory nodeIds) {
-        // Cache msg.sender
-        address sender = msg.sender;
-        // Assign return data length
-        nodeIds = new uint256[](schemas.length);
-        for (uint256 i; i < schemas.length; ++i) {
-            // Copy nodeId to return variable
-            nodeIds[i] = ++nodeCount;
-            // Increments nodeCount before event emission
-            emit InitializeNode(sender, schemas[i], nodeIds[i], messages[i]);
-        }
-    }
+    // /**
+    //  * @inheritdoc INodeRegistry
+    //  */
+    // function initializeNodeBatch(bytes32[] calldata schemas, bytes[][] calldata messages) external returns (uint256[] memory nodeIds) {
+    //     // Cache msg.sender
+    //     address sender = msg.sender;
+    //     // Assign return data length
+    //     nodeIds = new uint256[](schemas.length);
+    //     for (uint256 i; i < schemas.length; ++i) {
+    //         // Copy nodeId to return variable
+    //         nodeIds[i] = ++nodeCount;
+    //         // Increments nodeCount before event emission
+    //         emit InitializeNode(sender, schemas[i], nodeIds[i]);
+    //     }
+    // }
 
     //////////////////////////////////////////////////
     // NODE MESSAGING
