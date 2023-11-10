@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.21;
+pragma solidity 0.8.23;
 
 import {IdRegistry} from "../IdRegistry.sol";
 
@@ -18,9 +18,9 @@ interface IDelegateRegistry {
     //////////////////////////////////////////////////
 
     /**
-     * @notice Tracks value status for given id => transferNonce => target => status
+     * @notice Tracks value status for given id =>  target => status
      */
-    function idDelegates(uint256 id, uint256 transferNonce, address target) external view returns (bool);
+    function idDelegates(uint256 id, address target) external view returns (bool);
    
     //////////////////////////////////////////////////
     // DELEGATION REGISTRATION

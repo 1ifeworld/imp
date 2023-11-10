@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.21;
+pragma solidity 0.8.23;
 
 import {IIdRegistry} from "./interfaces/IIdRegistry.sol";
-import {ECDSA} from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
-import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
-
-/// TODO: Missing id recovery functionality
-/// TODO: bump to sol 0.8.22
 
 /**
  * @title IdRegistry
@@ -15,20 +10,13 @@ import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/Signat
 contract IdRegistry is IIdRegistry {
 
     //////////////////////////////////////////////////
-    // CUSTOMIZATION
-    //////////////////////////////////////////////////  
-
-    /// @notice Adds hash.recover() functionality
-    using ECDSA for bytes32;
-
-    //////////////////////////////////////////////////
     // ERRORS
     //////////////////////////////////////////////////   
 
-    /// @dev Revert when the destination must be empty but has an id.
+    /// @dev Revert when the destination must be empty but has an id
     error Has_Id();    
 
-    /// @dev Revert when the caller must have an id but does not have one.
+    /// @dev Revert when the caller must have an id but does not have one
     error Has_No_Id();
 
     /// @dev Revert when caller is not designated transfer recipient
@@ -37,14 +25,8 @@ contract IdRegistry is IIdRegistry {
     /// @dev Revert when caller is not designated transfer initiator
     error Not_Transfer_Initiator();
 
-    /// @dev Revert when address has already attested for another id
-    error Has_Attested();        
-
-    /// @dev Revert when invalid signature is passed into `attest()` function
-    error Invalid_Signature();    
-
-    /// @dev Revert when account calls `revokeAttestation` with no active attesatation
-    error No_Active_Attestation();  
+    /// @dev Revert when caller is not a designated backup addrss
+    error Unauthorized_Backup();
 
     //////////////////////////////////////////////////
     // EVENTS
@@ -55,10 +37,10 @@ contract IdRegistry is IIdRegistry {
      *
      *      Ids are unique identifiers that can be registered to an account an never repeat
      *
-     * @param to            Account calling `registerNode()`
+     * @param to            Account calling `register()`
      * @param id            The id being registered
      * @param backup        Account assigned as a backup for the given id
-     * @param data          Data to be associated with registration of id
+     * @param data          Data to be associated with registration of id (optional)
      */
     event Register(address indexed to, uint256 indexed id, address backup, bytes data);
 
@@ -90,20 +72,22 @@ contract IdRegistry is IIdRegistry {
     event TransferComplete(address indexed from, address indexed to, uint256 indexed id);
 
     /**
-     * @dev Emit an event when an id is attested for
+     * @dev Emit an event when an id's backup address processs a transfer
      *
-     * @param id        Id being attested for
-     * @param attestor  Address attesting
+     * @param from The custody address that previously owned the id
+     * @param to   The custody address that now owns the id
+     * @param id   The id
      */
-    event Attest(uint256 indexed id, address indexed attestor);
+    event Backup(address indexed from, address indexed to, uint256 indexed id);    
 
     /**
-     * @dev Emit an event when an id attestion is revoked
+     * @dev Emit an event when a id's backup address changes. It is possible for this
+     *      event to emit a backup address that is the same as the previously set value
      *
-     * @param id        Id who's attestation is getting revoked
-     * @param attestor  Address who's attestation is getting revoked
+     * @param id       The id whose backup address was changed
+     * @param backup   The new backup address
      */
-    event RevokeAttestation(uint256 indexed id, address indexed attestor);    
+    event ChangeBackupAddress(uint256 indexed id, address indexed backup);    
 
     //////////////////////////////////////////////////
     // STORAGE
@@ -122,12 +106,7 @@ contract IdRegistry is IIdRegistry {
     /**
      * @inheritdoc IIdRegistry
      */    
-    mapping(uint256 => address) public backupForId;    
-
-    /**
-     * @inheritdoc IIdRegistry
-     */  
-    mapping(uint256 => uint256) public transferCountForId;
+    mapping(uint256 => address) public backupFor;    
 
     /**
      * @dev Stores pendingTransfers info for all ids
@@ -135,16 +114,6 @@ contract IdRegistry is IIdRegistry {
      * @custom:param id     Numeric id
      */
     mapping(uint256 => PendingTransfer) public pendingTransfers;
-
-    /**
-     * @inheritdoc IIdRegistry
-     */      
-    mapping(address => uint256) public attestedBy;    
-
-    /**
-     * @inheritdoc IIdRegistry
-     */      
-    mapping(uint256 => address) public attestedFor;    
 
     //////////////////////////////////////////////////
     // VIEWS
@@ -155,7 +124,7 @@ contract IdRegistry is IIdRegistry {
      */  
     function transferPendingForId(uint256 id) external view returns (PendingTransfer memory) {
         return pendingTransfers[id];
-    }
+    }    
 
     //////////////////////////////////////////////////
     // ID REGISTRATION
@@ -164,20 +133,18 @@ contract IdRegistry is IIdRegistry {
     /**
      * @inheritdoc IIdRegistry
      */
-    function register(address backup, bytes calldata data) external returns (uint256 id) {
+    function register(address backupAddress, bytes calldata data) external returns (uint256 id) {
         // Cache msg.sender
         address sender = msg.sender;        
         // Revert if the sender already has an id
         if (idOwnedBy[sender] != 0) revert Has_Id();    
         // Increment idCount
         id = ++idCount;
-        // Increment transfer count for target id. Registration will always be 0 => 1
-        ++transferCountForId[id];
         // Assign id to owner
         idOwnedBy[sender] = id;
         // Assign backup to id
-        backupForId[id] = backup;
-        emit Register(sender, id, backup, data);        
+        backupFor[id] = backupAddress;
+        emit Register(sender, id, backupAddress, data);        
     }
 
     //////////////////////////////////////////////////
@@ -207,13 +174,17 @@ contract IdRegistry is IIdRegistry {
      */    
     function acceptTransfer(uint256 id) external {
         // Reterieve pendingTransfer info for givenId
-        PendingTransfer storage pendingTransfer = pendingTransfers[id];
+        PendingTransfer memory pendingTransfer = pendingTransfers[id];
         // Check if msg.sender is recipient address
         if (msg.sender != pendingTransfer.to) revert Not_Transfer_Recipient();
         // Check that pendingTransfer.to doesn't already own id
         if (idOwnedBy[pendingTransfer.to] != 0) revert Has_Id();
         // Execute transfer process
         _unsafeTransfer(id, pendingTransfer.from, pendingTransfer.to);
+        // Clear pendingTransfer storage for given id
+        delete pendingTransfers[id];
+        // Emit event for indexing
+        emit TransferComplete(pendingTransfer.from, pendingTransfer.to, id);        
     }
 
     /**
@@ -221,11 +192,12 @@ contract IdRegistry is IIdRegistry {
      */ 
     function cancelTransfer(uint256 id) external {
         // Reterieve pendingTransfer info for givenId
-        PendingTransfer storage pendingTransfer = pendingTransfers[id];
+        PendingTransfer memory pendingTransfer = pendingTransfers[id];
         // Check if msg.sender is "from" address
         if (msg.sender != pendingTransfer.from) revert Not_Transfer_Initiator();        
         // Clear pendingTransfer for given id
         delete pendingTransfers[id];
+        // Emit event for indexing
         emit TransferCancelled({from: pendingTransfer.from, to: pendingTransfer.to, id: id});
     }
 
@@ -233,23 +205,43 @@ contract IdRegistry is IIdRegistry {
      * @dev Transfer id without checking invariants
      */    
     function _unsafeTransfer(uint256 id, address from, address to) internal {
+        // Delete ownership of designated id from "from" address
+        delete idOwnedBy[from];        
         // Assign ownership of designated id to "to" address
         idOwnedBy[to] = id;
-        // Delete ownership of designated id from "from" address
-        delete idOwnedBy[from];
-        // Increment id transfer count to clear delegations from DelegateRegistry
-        ++transferCountForId[id];
-        // Clear pendingTransfer storage for given id
-        delete pendingTransfers[id];
-        // Clear existing attestation for id, if applicable
-        _unsafeRevokeAttestation(id);
-        // Emit event for indexing
-        emit TransferComplete(from, to, id);
     }
 
     //////////////////////////////////////////////////
     // ID RECOVERY
-    //////////////////////////////////////////////////      
+    //////////////////////////////////////////////////   
+
+    function changeBackupAddress(address backupAddress) external {
+        // Retrieve id for msg.sender
+        uint256 id = idOwnedBy[msg.sender];
+        // Revert if sender does not own id
+        if (id == 0) revert Has_No_Id();
+        // Update backup address
+        backupFor[id] = backupAddress;
+        // Emit for indexing
+        emit ChangeBackupAddress(id, backupAddress);
+    }       
+
+    function backup(address from, address to) external {
+        // Retrieve id for 
+        uint256 id = idOwnedBy[from];
+        // Revert if from address does not own id
+        if (id == 0) revert Has_No_Id();        
+        // Cache sender address
+        address sender = msg.sender;
+        // Check if sender is recovery address for id
+        if (backupFor[id] != sender) revert Unauthorized_Backup();
+        // Check if designated to address already owns id
+        if (idOwnedBy[to] != 0) revert Has_Id();
+        // Process backup transfer
+        _unsafeTransfer(id, from, to);
+        // Emit for indexing
+        emit Backup(from, to, id);
+    }
 
     /* 
         NOTE: initial ideas
@@ -260,73 +252,4 @@ contract IdRegistry is IIdRegistry {
         also need to add in a "change backup address" function,
         potentially with similar transfer nonce pattern
     */
-
-    //////////////////////////////////////////////////
-    // ID ATTESTATION
-    //////////////////////////////////////////////////                
-
-    /**
-     * @inheritdoc IIdRegistry
-     */     
-    function attest(bytes32 hash, bytes calldata sig, address signerOverride) external {
-        // Cache msg.sender
-        address sender = msg.sender;
-        // Reterieve id for sender
-        uint256 id = idOwnedBy[sender];      
-        // Check if sender owns an id
-        if (id == 0) revert Has_No_Id();
-        // Check if signerOveride for erc1271 contract account sig verification is present
-        if (signerOverride == address(0)) {
-            // Attempt to recover attestor address from EOA signature
-            address attestor = hash.recover(sig);    
-            // Check they havent already attested for another id
-            if (attestedBy[attestor] != 0) revert Has_Attested();
-            // Store attestation - double storage so that attestations can be automtically cleared on id trasnfers
-            attestedBy[attestor] = id;
-            attestedFor[id] = attestor;
-            emit Attest(id, attestor);
-        } else {
-            // signerOveride was present, attempt ERC1271 signature verification
-            if (!SignatureChecker.isValidERC1271SignatureNow(signerOverride, hash, sig)) revert Invalid_Signature();
-            // Check they havent already attested for another id
-            if (attestedBy[signerOverride] != 0) revert Has_Attested();            
-            // Store attestation - double storage so that attestations can be automtically cleared on id trasnfers
-            attestedBy[signerOverride] = id;
-            attestedFor[id] = signerOverride;
-            emit Attest(id, signerOverride);
-        } 
-    }
-
-    /**
-     * @inheritdoc IIdRegistry
-     */      
-    function revokeAttestation() external {
-        // Cache msg.sender
-        address sender = msg.sender;
-        // Retrieve attested id, if applicable
-        uint256 id = attestedBy[sender];
-        // Revert if id = 0;
-        if (id == 0) revert No_Active_Attestation();
-        // Clear attestation storage
-        delete attestedBy[sender];
-        delete attestedFor[id];
-        // Emit for indexing
-        emit RevokeAttestation(id, sender);
-    }        
-
-    /**
-     * @dev Revoke attestation for id without checking invariants
-     */        
-    function _unsafeRevokeAttestation(uint256 id) internal {
-        // Retrieve attestor address, if applicable
-        address attestor = attestedFor[id];
-        // If attestor != address(0), clear storage and emit revoke event
-        if (attestor != address(0)) {
-            // Clear attestation storage
-            delete attestedBy[attestor];
-            delete attestedFor[id];
-            // Emit for indexing
-            emit RevokeAttestation(id, attestor);
-        }
-    }
 }

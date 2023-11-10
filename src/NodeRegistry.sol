@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.21;
+pragma solidity 0.8.23;
 
 import {INodeRegistry} from "./interfaces/INodeRegistry.sol";
-
-/// TODO: bump to sol 0.8.22
 
 /**
  * @title NodeRegistry
@@ -18,8 +16,8 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @dev Emit an event when a new schema is registered
      *
-     *      Schemas are unique hash identifiers that nodeIds anchor themselves on upon registration
-     *      NodeIds that are reigstered without providing an existing schema will be considered invalid
+     *      Schemas are unique hash identifiers that nodeIds anchor themselves to upon initialization
+     *      NodeIds that are initialized without providing an existing schema will be considered invalid
      *
      * @param sender        Address of the account calling `registerSchema()`
      * @param schema        Hash value for the unique schema being registered
@@ -28,31 +26,31 @@ contract NodeRegistry is INodeRegistry {
     event RegisterSchema(address indexed sender, bytes32 indexed schema, bytes data);
 
     /**
-     * @dev Emit an event when a new node is registered
+     * @dev Emit an event when a new node is initialized
      *
-     *      NodeIds provide targets for messaging schemes. It is recommended
-     *      that all messaging schemes include nodeId as a field to provide
+     *      NodeIds provide targets for messaging strategies. It is recommended
+     *      that all messaging strategies include nodeId as a field to provide
      *      affective filtering of the entire data set produced via the registry
      *
-     * @param sender        Address of the account calling `registerNode()`
-     * @param nodeId        NodeId being registered
-     * @param data          Data to associate with the registration of a new nodeId
+     * @param sender        Address of the account calling `initializeNode()`
+     * @param nodeId        NodeId being initialized
+     * @param data          Data to associate with the initialization of a new nodeId
      */
-    event RegisterNode(address indexed sender, uint256 indexed nodeId, bytes data);
+    event InitializeNode(address indexed sender, uint256 indexed nodeId, bytes data);
 
     /**
-     * @dev Emit an event when a new message is sent
+     * @dev Emit an event when a new update is sent
      *
-     *      Messages allow for the generic transmission of data. The sender field in the
-     *      message event allows for filtering by accounts such as app level signers
-     *      while the messageId field allows for a universal-id mechanism to identify
-     *      given messages regardless of the nodeId they are targeting.
+     *      Updates allow for the transmission of data to existing nodes. The sender field in the
+     *      UpdateNode event allows for filtering by accounts such as app-level signers,
+     *      while the updateId field allows for a universal-id mechanism to identify
+     *      given updates regardless of the nodeId they are targeting
      *
-     * @param sender        Address of the account calling `messageNode()`
-     * @param messageId     The messageId being generated
-     * @param data          Data to transmit in the message
+     * @param sender        Address of the account calling `updateNode()`
+     * @param updateId      The updateId being generated
+     * @param data          Data to transmit in the update
      */
-    event MessageNode(address indexed sender, uint256 indexed messageId, bytes data);
+    event UpdateNode(address indexed sender, uint256 indexed updateId, bytes data);
 
     //////////////////////////////////////////////////
     // STORAGE
@@ -71,10 +69,10 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    uint256 public messageCount;
+    uint256 public updateCount;
 
     //////////////////////////////////////////////////
-    // NODE SCHEMA REGISTRATION
+    // SCHEMA REGISTRATION
     //////////////////////////////////////////////////
 
     /**
@@ -109,16 +107,16 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    function registerNode(bytes calldata data) external returns (uint256 nodeId) {
+    function initializeNode(bytes calldata data) external returns (uint256 nodeId) {
         // Increments nodeCount before event emission
         nodeId = ++nodeCount;
-        emit RegisterNode(msg.sender, nodeId, data);
+        emit InitializeNode(msg.sender, nodeId, data);
     }
 
     /**
      * @inheritdoc INodeRegistry
      */
-    function registerNodeBatch(bytes[] calldata datas) external returns (uint256[] memory nodeIds) {
+    function initializeNodeBatch(bytes[] calldata datas) external returns (uint256[] memory nodeIds) {
         // Cache msg.sender
         address sender = msg.sender;
         // Assign return data length
@@ -127,7 +125,7 @@ contract NodeRegistry is INodeRegistry {
             // Copy nodeId to return variable
             nodeIds[i] = ++nodeCount;
             // Increments nodeCount before event emission
-            emit RegisterNode(sender, nodeIds[i], datas[i]);
+            emit InitializeNode(sender, nodeIds[i], datas[i]);
         }
     }
 
@@ -138,25 +136,25 @@ contract NodeRegistry is INodeRegistry {
     /**
      * @inheritdoc INodeRegistry
      */
-    function messageNode(bytes calldata data) external returns (uint256 messageId) {
-        // Increments messageCount before event emission
-        messageId = ++messageCount;
-        emit MessageNode(msg.sender, messageId, data);
+    function updateNode(bytes calldata data) external returns (uint256 updateId) {
+        // Increments updateCount before event emission
+        updateId = ++updateCount;
+        emit UpdateNode(msg.sender, updateId, data);
     }
 
     /**
      * @inheritdoc INodeRegistry
      */
-    function messageNodeBatch(bytes[] calldata datas) external returns (uint256[] memory messageIds) {
+    function updateNodeBatch(bytes[] calldata datas) external returns (uint256[] memory updateIds) {
         // Cache msg.sender
         address sender = msg.sender;
         // Assign return data length
-        messageIds = new uint256[](datas.length);
+        updateIds = new uint256[](datas.length);
         for (uint256 i; i < datas.length; ++i) {
-            // Increment messageCount and copy to return variable
-            messageIds[i] = ++messageCount;
+            // Increment updateCount and copy to return variable
+            updateIds[i] = ++updateCount;
             // Emit Message event
-            emit MessageNode(sender, messageIds[i], datas[i]);
+            emit UpdateNode(sender, updateIds[i], datas[i]);
         }
     }
 }

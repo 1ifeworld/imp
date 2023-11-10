@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.21;
+pragma solidity 0.8.23;
 
 interface IIdRegistry {
+    
     //////////////////////////////////////////////////
     // TYPES
     //////////////////////////////////////////////////
@@ -34,27 +35,12 @@ interface IIdRegistry {
     /**
      * @notice Tracks backup address registered to a given id
      */
-    function backupForId(uint256 id) external view returns (address);
-
-    /**
-     * @notice Tracks number of times a given id has been transferred (registration included)
-     */
-    function transferCountForId(uint256 id) external view returns (uint256);
+    function backupFor(uint256 id) external view returns (address);
 
     /**
      * @notice Tracks pendingTransfer info for given id
      */
-    function transferPendingForId(uint256 id) external view returns (PendingTransfer memory);    
-
-    /**
-     * @notice Tracks id attested for by a given account
-     */      
-    function attestedBy(address attestor) external view returns (uint256);      
-
-    /**
-     * @notice Tracks attestor address for a given id
-     */      
-    function attestedFor(uint256 id) external view returns (address);       
+    function transferPendingForId(uint256 id) external view returns (PendingTransfer memory);      
 
     //////////////////////////////////////////////////
     // ID REGISTRATION
@@ -106,27 +92,5 @@ interface IIdRegistry {
     // ID RECOVERY
     //////////////////////////////////////////////////
 
-    /// TODO: Missing
-
-    //////////////////////////////////////////////////
-    // ID ATTESTATION
-    //////////////////////////////////////////////////
-
-    /**
-     * @notice  Allows id owner to prove they are in control of another account
-     * @dev     Can only be called by id owner
-     * @dev     Hash MUST be the result of a keccack256 operation or risks vulnerability
-     *  
-     * @param hash           Hashed digest for sig verification process
-     * @param sig            Signed message for sig verification process
-     * @param signerOverride Optional override to allow contract accounts to submit attestations
-     */    
-    function attest(bytes32 hash, bytes calldata sig, address signerOverride) external;
-
-    /**
-     * @notice  Revokes any existing attestation from a given account
-     * @dev     Reverts if no existing attestation for msg.sender
-     * @dev     Callable by anyine
-     */    
-    function revokeAttestation() external;
+    /// TODO: Missing recovery functionality
 }
