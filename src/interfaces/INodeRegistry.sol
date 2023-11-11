@@ -19,7 +19,7 @@ interface INodeRegistry {
     /**
      * @notice Initialize a new node by incrementing the nodeCount and emitting data
      *         in association with the initialization event
-     *
+     * 
      * @dev Callable by anyone
      *
      * @param schema        Schema initialize node as
@@ -30,7 +30,7 @@ interface INodeRegistry {
     /**
      * @notice Batch version of `register`
      *
-     * @dev Callable by anyone
+     * @dev Will revert messages.length < schemas.length !!
      *
      * @param schemas       Schemas to register nodes as
      * @param messages      Messages to send to registered nodes
@@ -53,6 +53,8 @@ interface INodeRegistry {
 
     /**
      * @notice Batch version of `update`
+     *
+     * @dev Will revert messages.length < schemas.length !!
      *
      * @param nodeIds       Ids of nodes to target
      * @param messages      Messages to send to target nodes
