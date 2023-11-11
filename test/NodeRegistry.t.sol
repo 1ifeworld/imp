@@ -11,8 +11,10 @@ contract NodeRegistryTest is Test {
     // CONSTANTS
     //////////////////////////////////////////////////   
 
-    address constant MOCK_USER_ACCOUNT = address(0x123);
+    address constant MOCK_USER = address(0x123);
     bytes constant ZERO_BYTES = new bytes(0);
+    bytes32 constant ZERO_BYTES32 = keccak256(new bytes(0));
+    bytes32 constant EXAMPLE_SCHEMA = 0xF36F2F0432F99EA34A360F154CEA9D1FAD45C7319E27ADED55CC0D28D0924068;
 
     //////////////////////////////////////////////////
     // PARAMETERS
@@ -24,94 +26,122 @@ contract NodeRegistryTest is Test {
     // SETUP
     //////////////////////////////////////////////////   
 
-    // Set-up called before each test to clear 0 -> 1 gas costs for counter storage
+    // Set-up called before each test to clear 0 -> 1 gas cost for nodeCount storage
     function setUp() public {
         nodeRegistry = new NodeRegistry();  
-        nodeRegistry.registerSchema(new bytes(0));
-        nodeRegistry.initializeNode(new bytes(0));
-        nodeRegistry.updateNode(new bytes(0));
+        bytes[] memory emptyArray = new bytes[](1);
+        emptyArray[0] = ZERO_BYTES;
+        nodeRegistry.register(ZERO_BYTES32, emptyArray);
     }    
-
+    
     //////////////////////////////////////////////////
-    // REGISTER SCHEMA TESTS
-    ////////////////////////////////////////////////// 
-
-    function test_registerSchema() public {
-        uint256 expectedCount = nodeRegistry.schemaCount() + 1;
-        vm.startPrank(MOCK_USER_ACCOUNT);
-        // Checks if topics 1, 2, 3, non-indexed data and event emitter match expected emitter + event signature + event values
-        vm.expectEmit(true, true, false, true, address(nodeRegistry));        
-        // Emit event we are expecting
-        emit NodeRegistry.RegisterSchema(MOCK_USER_ACCOUNT, keccak256(abi.encode(block.chainid, address(nodeRegistry), expectedCount)), ZERO_BYTES);
-        // Perform call to emit event
-        nodeRegistry.registerSchema(ZERO_BYTES);
-        require(nodeRegistry.schemaCount() == expectedCount, "schemaCount not incremented correctly");
-    }
-
-    function test_batchRegisterSchema() public {
-        uint256 quantity = 10;
-        uint256 expectedCount = nodeRegistry.schemaCount() + quantity;        
-        vm.prank(MOCK_USER_ACCOUNT);
-        nodeRegistry.registerSchemaBatch(generateEmptyData(quantity));
-        require(nodeRegistry.schemaCount() == expectedCount, "schemaCount not incremented correctly");
-    }       
-
-    //////////////////////////////////////////////////
-    // INITIALIZE NODE TESTS
+    // REGISTER TESTS
     //////////////////////////////////////////////////     
 
-    function test_initializeNode() public {
-        uint256 expectedCount = nodeRegistry.nodeCount() + 1;
-        vm.startPrank(MOCK_USER_ACCOUNT);
+    function test_register() public {
+        // Prep input data
+        bytes[] memory messages = new bytes[](0);
+        // Prank into user
+        vm.startPrank(MOCK_USER);        
+        // Cache expected nodeId return value post register execution
+        uint256 expectedCount = nodeRegistry.nodeCount() + 1;        
         // Checks if topics 1, 2, 3, non-indexed data and event emitter match expected emitter + event signature + event values
-        vm.expectEmit(true, true, false, true, address(nodeRegistry));      
-        // Emit event we are expecting
-        emit NodeRegistry.InitializeNode(MOCK_USER_ACCOUNT, expectedCount, ZERO_BYTES);        
-        // Perform call to emit event
-        nodeRegistry.initializeNode(ZERO_BYTES);
-        require(nodeRegistry.nodeCount() == expectedCount, "nodeCount not incremented correctly");
-    }    
-
-    function test_batchInitializeNode() public {
-        uint256 quantity = 10;
-        uint256 expectedCount = nodeRegistry.nodeCount() + quantity;
-        vm.prank(MOCK_USER_ACCOUNT);
-        nodeRegistry.initializeNodeBatch(generateEmptyData(quantity));
-        require(nodeRegistry.nodeCount() == expectedCount, "nodeCount not incremented correctly");
+        vm.expectEmit(true, true, true, true, address(nodeRegistry));    
+        // Emit event with expected values
+        emit NodeRegistry.Register(MOCK_USER, EXAMPLE_SCHEMA, expectedCount, messages);        
+        // Call `register()` on nodeRegistry
+        nodeRegistry.register(EXAMPLE_SCHEMA, messages);
+        // Check storage updated correctly
+        assertEq(nodeRegistry.nodeCount(), expectedCount);
     }        
 
+    function test_batchRegister() public {
+        // Define batch quantity
+        uint256 quantity = 10;        
+        // Prep input data
+        bytes[][] memory messages = new bytes[][](quantity);
+        // Prank into user
+        vm.startPrank(MOCK_USER);        
+        // Cache expected nodeId return value post register execution
+        uint256 expectedCount = nodeRegistry.nodeCount() + quantity;            
+        // Call `registerBatch()` on nodeRegistry
+        nodeRegistry.registerBatch(generateSchemaArray(quantity, EXAMPLE_SCHEMA), messages);
+        // Check storage updated correctly
+        assertEq(nodeRegistry.nodeCount(), expectedCount);
+    }            
+
+    function test_Revert_messagesUnderflow_batchRegister() public {
+        // Define batch quantity
+        uint256 quantity = 10;        
+        // Prep input data
+        bytes[][] memory messages = new bytes[][](quantity - 1);
+        // Prank into user
+        vm.startPrank(MOCK_USER);        
+        // Should revert because of mismatched schemas + messages lengths
+        // At the time of testing, error code reads: "panic: array out-of-bounds access (0x32)"
+        vm.expectRevert();
+        nodeRegistry.registerBatch(generateSchemaArray(quantity, EXAMPLE_SCHEMA), messages);
+    }     
+
     //////////////////////////////////////////////////
-    // UPDATE NODE TESTS
-    ////////////////////////////////////////////////// 
+    // UPDATE TESTS
+    //////////////////////////////////////////////////   
 
-    function test_updateNode() public {
-        uint256 expectedCount = nodeRegistry.updateCount() + 1;
-        vm.startPrank(MOCK_USER_ACCOUNT);
+    function test_update() public {
+        // Prep input data
+        uint256 targetNodeId = 1;
+        bytes[] memory messages = new bytes[](0);
+        // Prank into user
+        vm.startPrank(MOCK_USER);             
         // Checks if topics 1, 2, 3, non-indexed data and event emitter match expected emitter + event signature + event values
-        vm.expectEmit(true, true, false, true, address(nodeRegistry));            
-        // Emit event we are expecting
-        emit NodeRegistry.UpdateNode(MOCK_USER_ACCOUNT, expectedCount, ZERO_BYTES);                
-        // Perform call to emit event
-        nodeRegistry.updateNode(ZERO_BYTES);
-        require(nodeRegistry.updateCount() == expectedCount, "updateCount not incremented correctly");
-    }  
+        vm.expectEmit(true, true, false, true, address(nodeRegistry));    
+        // Emit event with expected values
+        emit NodeRegistry.Update(MOCK_USER, targetNodeId, messages);        
+        // Call `register()` on nodeRegistry
+        nodeRegistry.update(targetNodeId, messages);
+    }     
 
-    function test_batchUpdateNode() public {
-        uint256 quantity = 10;
-        uint256 expectedCount = nodeRegistry.updateCount() + quantity;        
-        vm.prank(MOCK_USER_ACCOUNT);
-        nodeRegistry.updateNodeBatch(generateEmptyData(quantity));
-        require(nodeRegistry.updateCount() == expectedCount, "updateCount not incremented correctly");
-    }    
+    function test_batchUpdate() public {
+        // Define batch quantity
+        uint256 quantity = 10;        
+        uint256 targetNodeId = 1;
+        // Prep input data
+        bytes[][] memory messages = new bytes[][](quantity);
+        // Prank into user
+        vm.startPrank(MOCK_USER);                
+        // Call `updateBatch` on nodeRegistry
+        nodeRegistry.updateBatch(generateNodeIdArray(quantity, targetNodeId), messages);        
+    }         
+
+    function test_Revert_messagesUnderflow_batchUpdate() public {
+        // Define batch quantity
+        uint256 quantity = 10;        
+        uint256 targetNodeId = 1;
+        // Prep input data
+        bytes[][] memory messages = new bytes[][](quantity - 1);
+        // Prank into user
+        vm.startPrank(MOCK_USER);        
+        // Should revert because of mismatched nodeIds + messages lengths
+        // At the time of testing, error code reads: "panic: array out-of-bounds access (0x32)"
+        vm.expectRevert();
+        nodeRegistry.updateBatch(generateNodeIdArray(quantity, targetNodeId), messages);
+    }       
 
     //////////////////////////////////////////////////
     // HELPERS
     //////////////////////////////////////////////////  
 
-    function generateEmptyData(uint256 quantity) public pure returns (bytes[] memory batchData) {                   
-        batchData = new bytes[](quantity);
+    function generateSchemaArray(uint256 quantity, bytes32 schema) public pure returns (bytes32[] memory schemaArray) {                   
+        schemaArray = new bytes32[](quantity);
         for (uint256 i; i < quantity; ++i) {
-            batchData[i] = new bytes(0);
+            schemaArray[i] = schema;
         }
-    }                   
+    }            
+
+    function generateNodeIdArray(uint256 quantity, uint256 id) public pure returns (uint256[] memory idArray) {                   
+        idArray = new uint256[](quantity);
+        for (uint256 i; i < quantity; ++i) {
+            idArray[i] = id;
+        }
+    }                          
 }

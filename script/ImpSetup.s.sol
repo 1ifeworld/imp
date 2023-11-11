@@ -10,26 +10,23 @@ import {AttestationRegistry} from "../src/AttestationRegistry.sol";
 
 contract ImpSetupScript is Script {
 
-    IdRegistry idRegistry;
-    NodeRegistry nodeRegistry;
-    DelegateRegistry delegateRegistry;    
-    AttestationRegistry attestationRegistry;    
+    IdRegistry public idRegistry;
+    NodeRegistry public nodeRegistry;
+    DelegateRegistry public delegateRegistry;    
+    AttestationRegistry public attestationRegistry;    
     
     function setUp() public {}
 
     function run() public {
-        // NEW (?)
-        // bytes32 privateKeyBytes = vm.envBytes32("PRIVATE_KEY");
-        // uint256 deployerPrivateKey = uint256(privateKeyBytes);
-        // Current        
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        bytes32 privateKeyBytes = vm.envBytes32("PRIVATE_KEY");
+        uint256 deployerPrivateKey = uint256(privateKeyBytes);
 
         vm.startBroadcast(deployerPrivateKey);
 
         nodeRegistry = new NodeRegistry();
-        idRegistry = new IdRegistry();
-        delegateRegistry = new DelegateRegistry(address(idRegistry));
-        attestationRegistry = new AttestationRegistry();
+        // idRegistry = new IdRegistry();
+        // delegateRegistry = new DelegateRegistry(address(idRegistry));
+        // attestationRegistry = new AttestationRegistry();
 
         vm.stopBroadcast();
     }

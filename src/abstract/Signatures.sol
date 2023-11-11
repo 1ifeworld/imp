@@ -4,10 +4,15 @@ pragma solidity 0.8.23;
 import {ECDSA} from "openzeppelin-contracts/utils/cryptography/ECDSA.sol";
 import {SignatureChecker} from "openzeppelin-contracts/utils/cryptography/SignatureChecker.sol";
 
+// TODO: missing documentation for `_verifySig`
+
 abstract contract Signatures {
     using ECDSA for bytes32;
 
+    /// @dev Revert if signature was not valid for designated signer address
     error Invalid_Signature();
+
+    /// @dev Revert if current timestamp is past designated deadline
     error Signature_Expired();
 
     function _verifySig(bytes memory message, address signer, uint256 deadline, bytes memory sig) internal view {
