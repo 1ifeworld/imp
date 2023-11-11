@@ -18,11 +18,8 @@ contract ImpSetupScript is Script {
     function setUp() public {}
 
     function run() public {
-        // NEW (?)
         bytes32 privateKeyBytes = vm.envBytes32("PRIVATE_KEY");
         uint256 deployerPrivateKey = uint256(privateKeyBytes);
-        // Current        
-        // uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         vm.startBroadcast(deployerPrivateKey);
 
@@ -39,7 +36,4 @@ contract ImpSetupScript is Script {
 
 // source .env
 // forge script script/ImpSetup.s.sol:ImpSetupScript -vvvv --rpc-url $RPC_URL --broadcast --verify --verifier-url https://api-goerli-optimistic.etherscan.io/api
-// forge script script/ImpSetup.s.sol:ImpSetupScript -vvvv --rpc-url $RPC_URL --broadcast --verify --verifier-url https://api-optimistic.etherscan.io/api
-// forge script script/ImpSetup.s.sol:ImpSetupScript -vvvv --rpc-url $RPC_URL --broadcast --verify --verifier-url https://api.arbiscan.io/api
-// forge script script/ImpSetup.s.sol:ImpSetupScript -vvvv --rpc-url $RPC_URL --broadcast --with-gas-price 19999926  --verify --verifier-url https://api-nova.arbiscan.io/api
 // forge script script/ImpSetup.s.sol:ImpSetupScript -vvvv --broadcast --fork-url http://localhost:8545
