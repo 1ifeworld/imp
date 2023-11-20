@@ -101,4 +101,24 @@ contract NodeRegistry is INodeRegistry {
             emit Update(sender, userIds[i], nodeIds[i], messages[i]);
         }
     }
+
+    //////////////////////////////////////////////////
+    // BUNDLE
+    //////////////////////////////////////////////////    
+
+    function bundle(
+        uint256 userId, 
+        bytes32 schema, 
+        bytes[] calldata regMessages, 
+        bytes[] calldata updMessages 
+    ) external returns (uint256 nodeId){
+        // Cache msg.sender
+        address sender = msg.sender;
+        // Increment nodeCount
+        nodeId = ++nodeCount;
+        // Process node registration
+        emit Register(sender, userId, schema, nodeId, regMessages);
+        // Process node update
+        emit Update(sender, userId, nodeId, updMessages);
+    }
 }
