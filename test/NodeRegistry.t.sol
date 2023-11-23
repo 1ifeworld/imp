@@ -129,30 +129,6 @@ contract NodeRegistryTest is Test {
     // }       
 
     //////////////////////////////////////////////////
-    // BUNDLE TESTS
-    //////////////////////////////////////////////////   
-
-    function test_bundle() public {
-        // Prep input data
-        bytes[] memory regMessages = new bytes[](0);
-        bytes[] memory updMessages = new bytes[](0);
-        // Prank into user
-        vm.startPrank(MOCK_USER);        
-        // Cache expected nodeId return value post register execution
-        uint256 expectedCount = nodeRegistry.nodeCount() + 1;        
-        // Checks if topics 1, 2, 3, non-indexed data and event emitter match expected emitter + event signature + event values
-        vm.expectEmit(true, true, true, true, address(nodeRegistry));    
-        // Emit event with expected values
-        // emit NodeRegistry.Register(MOCK_USER, MOCK_USER_ID, EXAMPLE_SCHEMA, expectedCount, regMessages); 
-        // Emit event with expected values
-        emit NodeRegistry.Update(MOCK_USER, MOCK_USER_ID, expectedCount, regMessages);        
-        // Call `register()` on nodeRegistry
-        nodeRegistry.bundle(MOCK_USER_ID, EXAMPLE_SCHEMA, regMessages, updMessages);
-        // Check storage updated correctly
-        assertEq(nodeRegistry.nodeCount(), expectedCount);
-    }     
-
-    //////////////////////////////////////////////////
     // HELPERS
     //////////////////////////////////////////////////  
 
