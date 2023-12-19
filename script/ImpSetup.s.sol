@@ -20,7 +20,7 @@ contract ImpSetupScript is Script {
         vm.startBroadcast(deployerPrivateKey);
                 
         idRegistry = new IdRegistry();
-        // postGateway = new PostGateway();
+        postGateway = new PostGateway();
 
         vm.stopBroadcast();
     }
@@ -31,6 +31,4 @@ contract ImpSetupScript is Script {
 // source .env
 // forge script script/ImpSetup.s.sol:ImpSetupScript -vvvv --rpc-url $RPC_URL --broadcast --verify --verifier-url https://api-goerli-optimistic.etherscan.io/api
 // forge script script/ImpSetup.s.sol:ImpSetupScript -vvvv --broadcast --fork-url http://localhost:8545
-
-
 // forge script script/ImpSetup.s.sol:ImpSetupScript -vvvv --rpc-url $RPC_URL --broadcast

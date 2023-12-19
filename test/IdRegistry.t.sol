@@ -69,17 +69,13 @@ contract IdRegistryTest is Test {
 
     function test_registerFor() public {
         // Mock expiration
-        uint256 expiration = 1734558342000;
+        uint256 expiration = block.timestamp + 600;
         bytes32 hash = keccak256(abi.encodePacked(
             idRegistry.REGISTER_TYPEHASH(),
             expiration
         ));
         // Generate sig from `to` address
         bytes32 digest = hash.toEthSignedMessageHash();
-        console2.logBytes32(idRegistry.REGISTER_TYPEHASH());
-        console2.logBytes32(hash);
-        console2.logBytes32(digest);
-
         bytes memory sig = _sign(eoaOwner.key, digest);
         // Prank into registrar address
         vm.startPrank(eoaRegistrar.addr);
