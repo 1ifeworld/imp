@@ -174,7 +174,7 @@ contract IdRegistry is IIdRegistry, Signatures {
         idOwnedBy[to] = id;
         // Assign backup to id
         backupFor[id] = backupAddress;
-        emit Register(msg.sender, id, backupAddress, new bytes(0));        
+        emit Register(to, id, backupAddress, new bytes(0));        
     }    
 
     //////////////////////////////////////////////////

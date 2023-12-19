@@ -20,7 +20,7 @@ contract ImpSetupScript is Script {
         vm.startBroadcast(deployerPrivateKey);
                 
         idRegistry = new IdRegistry();
-        postGateway = new PostGateway();
+        // postGateway = new PostGateway();
 
         vm.stopBroadcast();
     }
