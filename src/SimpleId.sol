@@ -3,12 +3,13 @@ pragma solidity 0.8.23;
 
 import {Signatures} from "./abstract/Signatures.sol";
 import {Nonces} from "./abstract/Nonces.sol";
+import {EIP712} from "./abstract/EIP712.sol";
 
 /**
  * @title SimpleId
  * @author Lifeworld
  */
-contract SimpleId is Signatures, Nonces {
+contract SimpleId is Signatures, Nonces, EIP712 {
 
     // Errors
     error Has_Id();      
@@ -20,7 +21,6 @@ contract SimpleId is Signatures, Nonces {
 
     bytes32 public constant REGISTER_TYPEHASH =
         keccak256("Register(address to,address recovery,uint256 nonce,uint256 deadline)");    
-
 
     // Storage
 
@@ -37,11 +37,11 @@ contract SimpleId is Signatures, Nonces {
     function registerFor(
         address to,
         address recovery,
-        uint256 expiration,
+        uint256 deadline,
         bytes calldata sig
     ) external returns (uint256 id) {
         // Revert if signature is invalid
-        _verifyRegisterSig({to: to, recovery: recovery, expiration: expiration, sig: sig});
+        _verifyRegisterSig({to: to, recovery: recovery, deadline: deadline, sig: sig});
         // check to address doesnt own id
         if (idOf[to] != 0) revert Has_Id();
         // increment id counter
@@ -56,7 +56,7 @@ contract SimpleId is Signatures, Nonces {
         emit Register(to, id, recovery);
     }
 
-    function _verifyRegisterSig(address to, address recovery, uint256 expiration, bytes memory sig) internal {
+    function _verifyRegisterSig(address to, address recovery, uint256 deadline, bytes memory sig) internal {
         _verifySig(
             _hashTypedDataV4(keccak256(abi.encode(REGISTER_TYPEHASH, to, recovery, _useNonce(to), deadline))),
             to,

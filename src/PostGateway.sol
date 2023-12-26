@@ -27,7 +27,7 @@ contract PostGateway is IPostGateway {
     /**
      * @inheritdoc IPostGateway
      */
-    function post(bytes calldata input) external {
+    function post(bytes calldata /* input */) external {
         emit Post(msg.sender);
     }    
 
