@@ -4,3 +4,6 @@
 [submodule "lib/light-account"]
 	path = lib/light-account
 	url = https://github.com/1ifeworld/light-account
+[submodule "lib/openzeppelin-contracts"]
+	path = lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
